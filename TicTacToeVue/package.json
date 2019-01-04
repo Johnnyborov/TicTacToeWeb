@@ -1,0 +1,21 @@
+{
+  "version": "1.0.0",
+  "name": "vueapp",
+  "private": true,
+  "scripts": {
+    "dev": "webpack-dev-server --hot --open --mode development --devtool source-map",
+    "build": "webpack --mode production"
+  },
+  "dependencies": {
+    "vue": ">=2.5.17",
+    "vuex": ">=3.0.1"
+  },
+  "devDependencies": {
+    "vue-loader": ">=15.4.2",
+    "vue-template-compiler": ">=2.5.17",
+    "css-loader": ">=2.0.0",
+    "webpack": ">=4.20.0",
+    "webpack-cli": ">=3.1.2",
+    "webpack-dev-server": ">=3.1.9"
+  }
+}
