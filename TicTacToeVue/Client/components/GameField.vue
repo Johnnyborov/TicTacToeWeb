@@ -1,6 +1,6 @@
 <template>
 <div id="game-field">
-  <canvas id="canvas" ref="canvas"></canvas>
+  <canvas id="canvas" ref="canvas" @mousedown="this.mouseDown" @mouseup="this.mouseUp"></canvas>
 </div>
 </template>
 
@@ -47,6 +47,22 @@ export default {
   },
 
   methods: {
+    mouseDown: function(e) {
+      let rect = this.context.canvas.getBoundingClientRect()
+      let x = e.clientX - rect.left
+      let y = e.clientY - rect.top
+
+      console.log('down',x,y)
+    },
+
+    mouseUp: function(e) {
+      let rect = this.context.canvas.getBoundingClientRect()
+      let x = e.clientX - rect.left
+      let y = e.clientY - rect.top
+
+      console.log('up',x,y)
+    },
+
     resizeHandler: function() {
       this.$refs['canvas'].width = this.$refs['canvas'].parentElement.clientWidth
       this.$refs['canvas'].height = this.$refs['canvas'].parentElement.clientHeight
