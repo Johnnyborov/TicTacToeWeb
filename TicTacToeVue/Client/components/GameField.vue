@@ -1,12 +1,15 @@
 <template>
 <div id="game-field">
-  <canvas id="canvas" ref="canvas"></canvas>
-  <button @click="foo">Draw</button>
+  <canvas id="canvas" ref="canvas">
+    <cells-renderer></cells-renderer>
+  </canvas>
 </div>
 </template>
 
 <script>
 import Resources from '../resources/resources.js'
+import CellsRenderer from './CellsRenderer.vue'
+
 export default {
   data() {
     return {
@@ -16,6 +19,20 @@ export default {
       nought: null,
       clear: null
     }
+  },
+
+  components: {
+    'cells-renderer': CellsRenderer
+  },
+
+  created() {
+    window.addEventListener("resize", this.resizeHandler)
+    window.addEventListener('load', this.ready)
+  },
+  
+  destroyed() {
+    window.removeEventListener("resize", this.resizeHandler)
+    window.removeEventListener('load', this.ready)
   },
 
   mounted() {
@@ -38,17 +55,19 @@ export default {
   },
 
   methods: {
-    foo: function() {
-      var ctx = this.context
-      
-      ctx.lineWidth = 10
+    resizeHandler: function() {
+      this.$refs['canvas'].width = this.$refs['canvas'].parentElement.clientWidth
+      this.$refs['canvas'].height = this.$refs['canvas'].parentElement.clientHeight
 
-      for (let i = 0; i < 3; i++) {
-        for (let j = 0; j < 3; j++) {
-          ctx.strokeRect(5+130*i, 5+130*j, 110, 110)          
-          ctx.drawImage(this.cross, 10+130*i, 10+130*j) 
-        }    
-      }
+      this.$children.forEach(child => {
+        child.$forceUpdate();
+      });
+    },
+
+    ready: function() {
+      this.$children.forEach(child => {
+        child.$forceUpdate();
+      });
     }
   }
 }
