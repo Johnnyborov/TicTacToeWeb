@@ -30,22 +30,22 @@ export default {
       this.lastPressed = -1
       if (index > -1) {
         this.lastPressed = index
-        this.$store.commit('gameEntity/makePressed', index)
+        this.$store.commit('gameEntity/setPressed', index)
       }
     },
 
     cellMouseUp: function(index) {
       if (this.lastPressed > -1)
-        this.$store.commit('gameEntity/makeUnpressed', this.lastPressed)
+        this.$store.commit('gameEntity/setUnpressed', this.lastPressed)
       
       if (index > -1 && index === this.lastPressed) {
-        this.$store.dispatch('gameEntity/tryMove', this.lastPressed)
+        this.$store.commit('gameEntity/tryMove', this.lastPressed)
       }
     },
 
     cellMouseLeave: function() {
       if (this.lastPressed > -1)
-        this.$store.commit('gameEntity/makeUnpressed', this.lastPressed)
+        this.$store.commit('gameEntity/setUnpressed', this.lastPressed)
       
       this.lastPressed = -1
     },

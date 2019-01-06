@@ -3,7 +3,7 @@ export default {
   props: {
     value: {
       type: Object,
-      default: {status: '', pressed: false}
+      default: {type: '', status: 'normal'}
     },
 
     i: {
@@ -31,15 +31,21 @@ console.log('render')
     let i = this.i
     let j = this.j
     
-    if (this.value.pressed)
+    if (this.value.status == 'pressed')
       ctx.strokeStyle = '#08F'
-    else
+    else if  (this.value.status == 'disabled')
+      ctx.strokeStyle = '#444'
+    else if  (this.value.status == 'chain-member')
+      ctx.strokeStyle = '#080'
+    else if  (this.value.status == 'normal')
       ctx.strokeStyle = '#048'
+    else
+      throw "invalid cell status"
 
     ctx.strokeRect(2*halfCellBorderWidth+imgStep*j, 2*halfCellBorderWidth+imgStep*i, imgSize+2*halfCellBorderWidth, imgSize+2*halfCellBorderWidth)         
 
     let cellImg;
-    switch(this.value.status) {
+    switch(this.value.type) {
       case 'clear':
         cellImg = this.$parent.clearImg
         break
@@ -50,7 +56,7 @@ console.log('render')
         cellImg = this.$parent.noughtImg
         break
       default:
-        throw "Invalid cell value"
+        throw "Invalid cell type"
     }
 
     ctx.drawImage(cellImg, halfCellBorderWidth + cellBorderWidth+imgStep*j, halfCellBorderWidth + cellBorderWidth+imgStep*i, imgSize, imgSize)

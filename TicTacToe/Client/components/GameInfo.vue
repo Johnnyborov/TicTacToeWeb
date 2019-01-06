@@ -17,7 +17,7 @@ export default {
   computed: {
     gameStatus() {
       let result = ''
-
+      
       if (this.$store.state.gameEntity.gameOver) {
         switch(this.$store.state.gameEntity.winner) {
           case 'crosses':
