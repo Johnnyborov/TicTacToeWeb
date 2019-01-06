@@ -101,8 +101,15 @@ export default {
 <style>
   #game-field {
     background: sienna;
-    width: 66%;
-    height: 100%;
+    width: 100%;
+    height: 70%;
     position: absolute;
+  }
+
+  @media (orientation: landscape) {
+    #game-field {
+      width: 70%;
+      height: 100%;
+    }
   }
 </style>

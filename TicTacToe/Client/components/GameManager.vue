@@ -60,8 +60,15 @@ export default {
 <style>
   #game-manager {
     background: teal;
-    width: 100%;
-    padding-bottom: 66%;
+    width: 91%;
+    padding-bottom: 130%;
     position: relative;
+  }
+
+  @media (orientation: landscape) {
+    #game-manager {
+      width: 100%;
+      padding-bottom: 70%;
+    }
   }
 </style>

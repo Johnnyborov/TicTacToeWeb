@@ -1,7 +1,7 @@
 <template>
 <div id="game-info">
-  <h2>{{this.message}}</h2>
-  <h3>{{this.gameStatus}}</h3>
+  <h4>{{this.message}}</h4>
+  <h5>Game status: <br/> {{this.gameStatus}}</h5>
   <button @click="$emit('reset-click')">Reset</button>
 </div>
 </template>
@@ -45,9 +45,23 @@ export default {
     font-family: Verdana;
     color: forestgreen;
     background: gold;
-    width: 34%;
-    height: 100%;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+
+    width: 100%;
+    height: 30%;
     position: absolute;
-    left: 66%;
+    top: 70%;
+  }
+
+  @media (orientation: landscape) {
+    #game-info {
+      width: 30%;
+      height: 100%;
+      top: 0%;
+      left: 70%;
+    }
   }
 </style>

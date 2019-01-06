@@ -1,6 +1,6 @@
 ﻿<template>
 <div id="app">
-  <h2 id="h2">{{this.message}}</h2>
+  <h3>{{this.message}}</h3>
   <div id="game-row">
     <div id="game-column">
       <game-manager></game-manager>
@@ -38,10 +38,44 @@ export default {
     background:mediumslateblue;
     display: flex;
     flex-direction: row;
+    flex: 0 0 88vmin;
   }
 
   #game-column {
     background: maroon;
-    flex: 0 0 90vmin;
+    flex: 0 0 66vmin;
+  }
+
+  @media (orientation: landscape) {
+    #game-row {
+      flex: 0 0 80vmin;
+    }
+
+    #game-column {
+      flex: 0 0 95vmin;
+    }
+  }
+
+  h3 {
+    font-size: 6vmin;
+  }
+
+  h4 {
+    font-size: 5vmin;
+  }
+
+  h5 {
+    font-size: 4vmin;
+  }
+
+  button {
+    width: 20vmin;
+    font-size: 5vmin;
+  }
+
+  h3, h4, h5, button {
+    padding: 0;
+    border: 0;
+    margin: 0;
   }
 </style>
