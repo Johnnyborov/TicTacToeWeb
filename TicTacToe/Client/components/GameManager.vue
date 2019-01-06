@@ -1,7 +1,7 @@
 <template>
   <div id="game-manager">
-    <game-field @mouse-down="mouseDown" @mouse-up="mouseUp" @mouse-leave="mouseLeave"></game-field>
-    <game-info></game-info>
+    <game-field @mouse-down="cellMouseDown" @mouse-up="cellMouseUp" @mouse-leave="cellMouseLeave"></game-field>
+    <game-info @reset-click="resetGame"></game-info>
   </div>
 </template>
 
@@ -22,32 +22,36 @@ export default {
   },
 
   mounted() {
-    this.$store.commit('gameEngine/fillDefault')
+    this.$store.commit('gameEntity/fillDefault')
   },
 
   methods: {
-    mouseDown: function(index) {
+    cellMouseDown: function(index) {
       this.lastPressed = -1
       if (index > -1) {
         this.lastPressed = index
-        this.$store.commit('gameEngine/makePressed', index)
+        this.$store.commit('gameEntity/makePressed', index)
       }
     },
 
-    mouseUp: function(index) {
+    cellMouseUp: function(index) {
       if (this.lastPressed > -1)
-        this.$store.commit('gameEngine/makeUnpressed', this.lastPressed)
+        this.$store.commit('gameEntity/makeUnpressed', this.lastPressed)
       
       if (index > -1 && index === this.lastPressed) {
-        this.$store.dispatch('gameEngine/tryMove', this.lastPressed)
+        this.$store.dispatch('gameEntity/tryMove', this.lastPressed)
       }
     },
 
-    mouseLeave: function() {
+    cellMouseLeave: function() {
       if (this.lastPressed > -1)
-        this.$store.commit('gameEngine/makeUnpressed', this.lastPressed)
+        this.$store.commit('gameEntity/makeUnpressed', this.lastPressed)
       
       this.lastPressed = -1
+    },
+
+    resetGame: function() {
+      this.$store.commit('gameEntity/fillDefault')
     }
   }
 }

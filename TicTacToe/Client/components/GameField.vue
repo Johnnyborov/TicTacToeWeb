@@ -5,7 +5,7 @@
   @mouseup="$emit('mouse-up', getCellIndex($event))"
   @mouseleave="$emit('mouse-leave')">
     <field-cell
-      v-for="(cell,index) in $store.state.gameEngine.cells"
+      v-for="(cell,index) in $store.state.gameEntity.cells"
       :value="cell"
       :i="Math.floor(index / 3)"
       :j="index % 3"

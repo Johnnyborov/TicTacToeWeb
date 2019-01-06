@@ -1,7 +1,6 @@
-import { Store } from "vuex";
-
 export default {
   namespaced: true,
+  
   state: {
     gameOver: false,
     movesCount: 0,
@@ -11,6 +10,9 @@ export default {
 
   mutations: {
     fillDefault(state) {
+      state.gameOver = false
+      state.movesCount = 0
+      state.winner = ''
       state.cells = Array(9).fill().map(i => ({status: 'clear', pressed: false}))
     },
 

@@ -15,7 +15,7 @@ import GameManager from './GameManager.vue'
 export default {
   data() {
     return {
-      message: 'Basic Store Project Template',
+      message: 'TicTacToe',
     }
   },
 

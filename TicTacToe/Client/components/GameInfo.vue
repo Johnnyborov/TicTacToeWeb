@@ -1,8 +1,8 @@
 <template>
 <div id="game-info">
   <h2>{{this.message}}</h2>
-  <h2>{{this.gameStatus}}</h2>
-  <button>Reset</button>
+  <h3>{{this.gameStatus}}</h3>
+  <button @click="$emit('reset-click')">Reset</button>
 </div>
 </template>
 
@@ -10,7 +10,7 @@
 export default {
   data() {
     return {
-      message: 'Game Info',
+      message: 'Game Info:',
     }
   },
 
@@ -18,8 +18,8 @@ export default {
     gameStatus() {
       let result = ''
 
-      if (this.$store.state.gameEngine.gameOver) {
-        switch(this.$store.state.gameEngine.winner) {
+      if (this.$store.state.gameEntity.gameOver) {
+        switch(this.$store.state.gameEntity.winner) {
           case 'crosses':
             result = 'crosses won'
             break
