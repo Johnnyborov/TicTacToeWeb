@@ -57,20 +57,24 @@ export default {
   }
 
   h3 {
-    font-size: 6vmin;
-  }
-
-  h4 {
     font-size: 5vmin;
   }
 
   h5 {
-    font-size: 4vmin;
+    font-size: 3vmin;
   }
 
   button {
     width: 20vmin;
-    font-size: 5vmin;
+    font-size: 3vmin;
+  }
+
+  input {
+    font-size: 3vmin;
+  }
+
+  label {
+    font-size: 3vmin;
   }
 
   h3, h4, h5, button {

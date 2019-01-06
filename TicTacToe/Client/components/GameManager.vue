@@ -1,7 +1,7 @@
 <template>
   <div id="game-manager">
     <game-field @mouse-down="cellMouseDown" @mouse-up="cellMouseUp" @mouse-leave="cellMouseLeave"></game-field>
-    <game-info @reset-click="resetGame"></game-info>
+    <game-info @reset-click="resetGame" @sizes-click="changeSizes"></game-info>
   </div>
 </template>
 
@@ -52,6 +52,10 @@ export default {
 
     resetGame: function() {
       this.$store.commit('gameEntity/fillDefault')
+    },
+
+    changeSizes: function() {
+      console.log('Change sizes')
     }
   }
 }

@@ -20,7 +20,7 @@ export default {
   render() {
     if (!this.$parent.context) return
     let ctx = this.$parent.context
-console.log('render')
+
     let halfCellBorderWidth = Math.round(ctx.canvas.width / 40 / 2)
     let cellBorderWidth = 2 * halfCellBorderWidth
     let imgSize = Math.round((ctx.canvas.width - cellBorderWidth*(3 * 2 + 3)) / 3)
