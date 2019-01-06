@@ -81,23 +81,31 @@ export default {
     },
 
     getCellIndex: function(e) {
-      let rect = this.context.canvas.getBoundingClientRect()
-      let x = e.clientX - rect.left
-      let y = e.clientY - rect.top
-
       let xDim = this.$store.state.gameEntity.xDim
       let yDim = this.$store.state.gameEntity.yDim
       let maxDim = Math.max(xDim,yDim)
 
-      let cellWithInterspace = rect.height / maxDim
-      let i = Math.floor(y / cellWithInterspace)
-      let j = Math.floor(x / cellWithInterspace)
+      let halfCellBorderWidth = Math.floor(this.context.canvas.width / 25 / maxDim)
+      let cellBorderWidth = 2 * halfCellBorderWidth
+      if (halfCellBorderWidth === 0) {
+        cellBorderWidth = 1
+      }
+      let imgSize = Math.floor((this.context.canvas.width - maxDim*3*cellBorderWidth) / maxDim)
+      let imgStep = (imgSize + 3*cellBorderWidth)
+
+
+      let rect = this.context.canvas.getBoundingClientRect()
+      let x = e.clientX - rect.left
+      let y = e.clientY - rect.top
+
+      let i = Math.floor(y / imgStep)
+      let j = Math.floor(x / imgStep)
+
       if (i >= yDim || j >= xDim)
         return -1
 
-      let halfCellBorderWidth = Math.round(rect.height / 25 / maxDim)
-      if (y%cellWithInterspace < halfCellBorderWidth || (cellWithInterspace - y%cellWithInterspace) < halfCellBorderWidth ||
-          x%cellWithInterspace < halfCellBorderWidth || (cellWithInterspace - x%cellWithInterspace) < halfCellBorderWidth)
+      if (y%imgStep < halfCellBorderWidth || (imgStep - y%imgStep) < halfCellBorderWidth ||
+          x%imgStep < halfCellBorderWidth || (imgStep - x%imgStep) < halfCellBorderWidth)
           return -1
 
       return i*xDim + j

@@ -119,6 +119,8 @@ function finishGame(state, options) {
 }
 
 function setGameOverStatuses(state, {direction, i, j}) {
+  state.cells = state.cells.map(val => {return {type: val.type, status: 'disabled'}})
+
   switch(direction) {
     case 'right':
       for (let k = 0; k < state.winSize; ++k) 
@@ -137,9 +139,4 @@ function setGameOverStatuses(state, {direction, i, j}) {
         state.cells[(i+k)*state.xDim + (j - k)].status = 'chain-member'
       break
   }
-
-  state.cells.forEach(cell => {
-    if (cell.status !== 'chain-member')
-      cell.status = 'disabled'
-  });
 }

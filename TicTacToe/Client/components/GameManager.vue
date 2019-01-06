@@ -23,6 +23,15 @@ export default {
 
   mounted() {
     this.$store.commit('gameEntity/fillDefault')
+
+    this.$store.watch(
+      function(state) {
+        return {x: state.gameEntity.xDim, y: state.gameEntity.yDim}
+      },
+      () => {
+        this.$children[0].drawAllCells();
+      }
+    )
   },
 
   methods: {
@@ -56,7 +65,6 @@ export default {
 
     changeSizes: function(dimensions) {
       this.$store.commit('gameEntity/changeSizes', dimensions)
-      this.$children[0].drawAllCells();
     }
   }
 }

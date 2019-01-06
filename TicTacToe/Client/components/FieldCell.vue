@@ -25,10 +25,13 @@ export default {
     let yDim = this.$store.state.gameEntity.yDim
     let maxDim = Math.max(xDim,yDim)
 
-    let halfCellBorderWidth = Math.round(ctx.canvas.width / 25 / maxDim)
+    let halfCellBorderWidth = Math.floor(ctx.canvas.width / 25 / maxDim)
     let cellBorderWidth = 2 * halfCellBorderWidth
-    let imgSize = Math.round((ctx.canvas.width - cellBorderWidth*(maxDim * 3)) / maxDim)
-    let imgStep = (imgSize + 3 * cellBorderWidth)
+    if (halfCellBorderWidth === 0) {
+      cellBorderWidth = 1
+    }
+    let imgSize = Math.floor((ctx.canvas.width - maxDim*3*cellBorderWidth) / maxDim)
+    let imgStep = (imgSize + 3*cellBorderWidth)
 
     ctx.lineWidth = cellBorderWidth
 
@@ -46,7 +49,7 @@ export default {
     else
       throw "invalid cell status"
 
-    ctx.strokeRect(2*halfCellBorderWidth+imgStep*j, 2*halfCellBorderWidth+imgStep*i, imgSize+2*halfCellBorderWidth, imgSize+2*halfCellBorderWidth)         
+    ctx.strokeRect(cellBorderWidth+imgStep*j, cellBorderWidth+imgStep*i, imgSize+cellBorderWidth, imgSize+cellBorderWidth)         
 
     let cellImg;
     switch(this.value.type) {

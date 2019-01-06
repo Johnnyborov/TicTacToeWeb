@@ -1,5 +1,13 @@
 import makeMove from './gameEntityMakeMoveImpl.js'
 
+const minXDim = 3
+const minYDim = 3
+const minWinSize = 2
+
+const maxXDim = 100
+const maxYDim = 100
+const maxWinSize = 30
+
 function resetGame(state) {
   state.gameOver = false
   state.movesCount = 0
@@ -26,10 +34,18 @@ export default {
     },
 
     changeSizes(state, {xDim, yDim, winSize}) {
+      if (winSize >= minWinSize && winSize <= maxWinSize &&
+          minWinSize <= Math.min(xDim,yDim) && winSize !== state.winSize) {
+        state.winSize = winSize
+      }
+
+      if (xDim < minXDim || yDim < minYDim ||
+          xDim > maxXDim || yDim > maxYDim ||
+          xDim === state.xDim && yDim === state.yDim)
+        return
+
       state.xDim = xDim
       state.yDim = yDim
-      state.winSize = winSize
-
       resetGame(state)
     },
 
