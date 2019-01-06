@@ -38,9 +38,9 @@ export default {
     return {
       context: null,
 
-      cross: null,
-      nought: null,
-      clear: null,
+      clearImg: null,
+      crossImg: null,
+      noughtImg: null,
 
       lastPressed: -1
     }
@@ -66,17 +66,14 @@ export default {
     this.$refs['canvas'].width = this.$refs['canvas'].parentElement.clientWidth
     this.$refs['canvas'].height = this.$refs['canvas'].parentElement.clientHeight
 
-    var cross = new Image()
-    cross.src = Resources.cross
-    this.cross = cross
+    this.clearImg = new Image()
+    this.clearImg.src = Resources.clear
 
-    var nought = new Image()
-    nought.src = Resources.nought
-    this.nought = nought
+    this.crossImg = new Image()
+    this.crossImg.src = Resources.cross
 
-    var clear = new Image()
-    clear.src = Resources.clear
-    this.clear = clear
+    this.noughtImg = new Image()
+    this.noughtImg.src = Resources.nought
   },
 
   methods: {
@@ -95,8 +92,8 @@ export default {
         this.$store.commit('gameEngine/makeUnpressed', this.lastPressed)
       
       let index = getCellIndex(this.context, e)
-      if (this.lastPressed === index) {
-        this.$store.commit('gameEngine/tryMove', this.lastPressed)
+      if (index > -1 && index === this.lastPressed) {
+        this.$store.dispatch('gameEngine/tryMove', this.lastPressed)
       }
     },
 

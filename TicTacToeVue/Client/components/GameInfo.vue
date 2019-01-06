@@ -1,7 +1,7 @@
 <template>
 <div id="game-info">
   <h2>{{this.message}}</h2>
-  <h2>{{this.$store.state.gameEngine.msg}}</h2>
+  <h2>{{this.gameStatus}}</h2>
 </div>
 </template>
 
@@ -10,6 +10,30 @@ export default {
   data() {
     return {
       message: 'Game Info',
+    }
+  },
+
+  computed: {
+    gameStatus() {
+      let result = ''
+
+      if (this.$store.state.gameEngine.gameOver) {
+        switch(this.$store.state.gameEngine.winner) {
+          case 'crosses':
+            result = 'crosses won'
+            break
+          case 'noughts':
+            result = 'noughts won'
+            break
+          case 'draw':
+            result = 'draw'
+            break      
+        }
+      } else {
+        result = 'game is in progress'
+      }
+
+      return result
     }
   }
 }

@@ -3,7 +3,7 @@ export default {
   props: {
     value: {
       type: Object,
-      default: {type: -1, pressed: false}
+      default: {status: '', pressed: false}
     },
 
     i: {
@@ -20,7 +20,7 @@ export default {
   render() {
     if (!this.$parent.context) return
     let ctx = this.$parent.context
-
+console.log('render')
     let halfCellBorderWidth = Math.round(ctx.canvas.width / 40 / 2)
     let cellBorderWidth = 2 * halfCellBorderWidth
     let imgSize = Math.round((ctx.canvas.width - cellBorderWidth*(3 * 2 + 3)) / 3)
@@ -38,22 +38,22 @@ export default {
 
     ctx.strokeRect(2*halfCellBorderWidth+imgStep*j, 2*halfCellBorderWidth+imgStep*i, imgSize+2*halfCellBorderWidth, imgSize+2*halfCellBorderWidth)         
 
-    let cell;
-    switch(this.value.type) {
-      case 0:
-        cell = this.$parent.clear
+    let cellImg;
+    switch(this.value.status) {
+      case 'clear':
+        cellImg = this.$parent.clearImg
         break
-      case 1:
-        cell = this.$parent.cross
+      case 'cross':
+        cellImg = this.$parent.crossImg
         break
-      case 2:
-        cell = this.$parent.nought
+      case 'nought':
+        cellImg = this.$parent.noughtImg
         break
       default:
         throw "Invalid cell value"
     }
 
-    ctx.drawImage(cell, halfCellBorderWidth + cellBorderWidth+imgStep*j, halfCellBorderWidth + cellBorderWidth+imgStep*i, imgSize, imgSize)
+    ctx.drawImage(cellImg, halfCellBorderWidth + cellBorderWidth+imgStep*j, halfCellBorderWidth + cellBorderWidth+imgStep*i, imgSize, imgSize)
   }
 }
 </script>
