@@ -2,6 +2,7 @@
 <div id="game-info">
   <h2>{{this.message}}</h2>
   <h2>{{this.gameStatus}}</h2>
+  <button>Reset</button>
 </div>
 </template>
 
