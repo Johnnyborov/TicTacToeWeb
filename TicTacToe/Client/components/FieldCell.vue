@@ -21,9 +21,13 @@ export default {
     if (!this.$parent.context) return
     let ctx = this.$parent.context
 
-    let halfCellBorderWidth = Math.round(ctx.canvas.width / 40 / 2)
+    let xDim = this.$store.state.gameEntity.xDim
+    let yDim = this.$store.state.gameEntity.yDim
+    let maxDim = Math.max(xDim,yDim)
+
+    let halfCellBorderWidth = Math.round(ctx.canvas.width / 25 / maxDim)
     let cellBorderWidth = 2 * halfCellBorderWidth
-    let imgSize = Math.round((ctx.canvas.width - cellBorderWidth*(3 * 2 + 3)) / 3)
+    let imgSize = Math.round((ctx.canvas.width - cellBorderWidth*(maxDim * 3)) / maxDim)
     let imgStep = (imgSize + 3 * cellBorderWidth)
 
     ctx.lineWidth = cellBorderWidth

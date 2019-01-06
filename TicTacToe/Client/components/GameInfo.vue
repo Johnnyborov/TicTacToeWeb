@@ -4,17 +4,17 @@
   <div id="game-sizes">
     <div>
       <label>x-dim:</label>
-      <input/>
+      <input v-model="dimensions.xDim"/>
     </div>
     <div>
       <label>y-dim:</label>
-      <input/>
+      <input v-model="dimensions.yDim"/>
     </div>
     <div>
       <label>win-size:</label>
-      <input/>
+      <input v-model="dimensions.winSize"/>
     </div>
-    <button @click="$emit('sizes-click')">Apply</button>
+    <button @click="$emit('sizes-click', dimensions)">Apply</button>
   </div>
   <button @click="$emit('reset-click')">Reset</button>
 </div>
@@ -22,6 +22,16 @@
 
 <script>
 export default {
+  data() {
+    return {
+      dimensions: {
+        xDim: 3,
+        yDim: 3,
+        winSize: 3
+      }
+    }
+  },
+
   computed: {
     gameStatus() {
       let result = ''
@@ -98,6 +108,7 @@ export default {
     }
 
     input {
+      width: 20%;
       margin: 0 10% 0 0;
     }
   }

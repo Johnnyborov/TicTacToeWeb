@@ -7,8 +7,8 @@
     <field-cell
       v-for="(cell,index) in $store.state.gameEntity.cells"
       :value="cell"
-      :i="Math.floor(index / 3)"
-      :j="index % 3"
+      :i="Math.floor(index / $store.state.gameEntity.xDim)"
+      :j="index % $store.state.gameEntity.xDim"
       :key="index">
     </field-cell>
   </canvas>
@@ -73,6 +73,8 @@ export default {
     },
 
     drawAllCells: function() {
+      this.context.clearRect(0,0,this.context.canvas.width,this.context.canvas.height)
+
       this.$children.forEach(child => {
         child.$forceUpdate()
       });
@@ -83,16 +85,22 @@ export default {
       let x = e.clientX - rect.left
       let y = e.clientY - rect.top
 
-      let cellWithInterspace = rect.height / 3
+      let xDim = this.$store.state.gameEntity.xDim
+      let yDim = this.$store.state.gameEntity.yDim
+      let maxDim = Math.max(xDim,yDim)
+
+      let cellWithInterspace = rect.height / maxDim
       let i = Math.floor(y / cellWithInterspace)
       let j = Math.floor(x / cellWithInterspace)
+      if (i >= yDim || j >= xDim)
+        return -1
 
-      let halfCellBorderWidth = Math.round(rect.height / 40 / 2)
+      let halfCellBorderWidth = Math.round(rect.height / 25 / maxDim)
       if (y%cellWithInterspace < halfCellBorderWidth || (cellWithInterspace - y%cellWithInterspace) < halfCellBorderWidth ||
           x%cellWithInterspace < halfCellBorderWidth || (cellWithInterspace - x%cellWithInterspace) < halfCellBorderWidth)
           return -1
 
-      return i*3 + j
+      return i*xDim + j
     }
   }
 }

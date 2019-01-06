@@ -1,5 +1,12 @@
 import makeMove from './gameEntityMakeMoveImpl.js'
 
+function resetGame(state) {
+  state.gameOver = false
+  state.movesCount = 0
+  state.winner = ''
+  state.cells = Array(state.xDim*state.yDim).fill().map(i => ({type: 'clear', status: 'normal'}))
+}
+
 export default {
   namespaced: true,
   
@@ -7,15 +14,23 @@ export default {
     gameOver: false,
     movesCount: 0,
     winner: '',
+    xDim: 3,
+    yDim: 3,
+    winSize: 3,
     cells: []
   },
 
   mutations: {
     fillDefault(state) {
-      state.gameOver = false
-      state.movesCount = 0
-      state.winner = ''
-      state.cells = Array(9).fill().map(i => ({type: 'clear', status: 'normal'}))
+      resetGame(state)
+    },
+
+    changeSizes(state, {xDim, yDim, winSize}) {
+      state.xDim = xDim
+      state.yDim = yDim
+      state.winSize = winSize
+
+      resetGame(state)
     },
 
     setPressed(state, index) {

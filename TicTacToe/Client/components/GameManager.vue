@@ -54,8 +54,9 @@ export default {
       this.$store.commit('gameEntity/fillDefault')
     },
 
-    changeSizes: function() {
-      console.log('Change sizes')
+    changeSizes: function(dimensions) {
+      this.$store.commit('gameEntity/changeSizes', dimensions)
+      this.$children[0].drawAllCells();
     }
   }
 }

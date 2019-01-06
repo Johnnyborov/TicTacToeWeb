@@ -13,70 +13,90 @@ function makeMove(state, index) {
 
 function checkGame(state) {
   // check rows
-  for (let i = 0; i < 3; ++i) {
-    let startType = state.cells[i*3].type
-    if (startType !== 'clear') {
-      let foundChain = true
-      for (let k = 1; k < 3; ++k) {
-        if (state.cells[i*3+k].type !== startType)
-          foundChain = false
-      }
-      if (foundChain) {
-        finishGame(state, {direction: 'right', index: i})
-        return
+  for (let i = 0; i < state.yDim; ++i) {
+    for (let j = 0; j < state.xDim - state.winSize + 1; ++j) {
+
+      let startType = state.cells[i*state.xDim + j].type
+      if (startType !== 'clear') {
+
+        let foundChain = true
+        for (let k = 1; k < state.winSize; ++k) {
+          if (state.cells[i*state.xDim + (j + k)].type !== startType)
+            foundChain = false
+        }
+
+        if (foundChain) {
+          finishGame(state, {direction: 'right', i: i, j: j})
+          return
+        }
       }
     }
   }
 
   // check columns
-  for (let j = 0; j < 3; ++j) {
-    let startType = state.cells[j].type
-    if (startType !== 'clear') {
-      let found_chain = true
-      for (let k = 1; k < 3; ++k) {
-        if (state.cells[j+k*3].type !== startType)
-          found_chain = false
-      }
-      if (found_chain) {
-        finishGame(state, {direction: 'down', index: j})
-        return
+  for (let i = 0; i < state.yDim - state.winSize + 1; ++i) {
+    for (let j = 0; j < state.xDim; ++j) {
+
+      let startType = state.cells[i*state.xDim + j].type
+      if (startType !== 'clear') {
+
+        let found_chain = true
+        for (let k = 1; k < state.winSize; ++k) {
+          if (state.cells[(i+k)*state.xDim + j].type !== startType)
+            found_chain = false
+        }
+
+        if (found_chain) {
+          finishGame(state, {direction: 'down', i: i, j: j})
+          return
+        }
       }
     }
   }
 
   // check dioganal right+down
-  {
-    let startType = state.cells[0].type
-    if (startType !== 'clear') {
-      let found_chain = true
-      for (let k = 1; k < 3; ++k) {
-        if (state.cells[k*3+k].type !== startType)
-          found_chain = false
-      }
-      if (found_chain) {
-        finishGame(state, {direction: 'right+down', index: 0})
-        return
+  for (let i = 0; i < state.yDim - state.winSize + 1; ++i) {
+    for (let j = 0; j < state.xDim - state.winSize + 1; ++j) {
+
+      let startType = state.cells[i*state.xDim + j].type
+      if (startType !== 'clear') {
+
+        let found_chain = true
+        for (let k = 1; k < state.winSize; ++k) {
+          if (state.cells[(i+k)*state.xDim + (j + k)].type !== startType)
+            found_chain = false
+        }
+
+        if (found_chain) {
+          finishGame(state, {direction: 'right+down', i: i, j: j})
+          return
+        }
       }
     }
   }
   
   // check dioganal left+down
-  {
-    let startType = state.cells[2].type
-    if (startType !== 'clear') {
-      let found_chain = true
-      for (let k = 1; k < 3; ++k) {
-        if (state.cells[2+k*3-k].type !== startType)
-          found_chain = false
-      }
-      if (found_chain) {
-        finishGame(state, {direction: 'left+down', index: 2})
-        return
+  for (let i = 0; i < state.yDim - state.winSize + 1; ++i) {
+    for (let j = state.winSize - 1; j < state.xDim; ++j) {
+
+      let startType = state.cells[i*state.xDim + j].type
+      if (startType !== 'clear') {
+
+        let found_chain = true
+        for (let k = 1; k < state.winSize; ++k) {
+          if (state.cells[(i+k)*state.xDim + (j - k)].type !== startType)
+            found_chain = false
+        }
+
+        if (found_chain) {
+          finishGame(state, {direction: 'left+down', i: i, j: j})
+          return
+        }
       }
     }
   }
 
-  if (state.movesCount === 9) {
+  if (state.movesCount === state.xDim * state.yDim) {
     finishGame(state, {direction: 'none', index: -1})
     return
   }
@@ -98,23 +118,23 @@ function finishGame(state, options) {
   setGameOverStatuses(state, options)
 }
 
-function setGameOverStatuses(state, {direction, index}) {
+function setGameOverStatuses(state, {direction, i, j}) {
   switch(direction) {
     case 'right':
-      for (let k = 0; k < 3; ++k) 
-        state.cells[index*3+k].status = 'chain-member'
+      for (let k = 0; k < state.winSize; ++k) 
+        state.cells[i*state.xDim + (j + k)].status = 'chain-member'
       break
     case 'down':
-      for (let k = 0; k < 3; ++k) 
-        state.cells[index+k*3].status = 'chain-member'
+      for (let k = 0; k < state.winSize; ++k) 
+        state.cells[(i+k)*state.xDim + j].status = 'chain-member'
       break
     case 'right+down':
-      for (let k = 0; k < 3; ++k) 
-        state.cells[k*3+k].status = 'chain-member'
+      for (let k = 0; k < state.winSize; ++k) 
+        state.cells[(i+k)*state.xDim + (j + k)].status = 'chain-member'
       break
     case 'left+down':
-      for (let k = 0; k < 3; ++k) 
-        state.cells[2+k*3-k].status = 'chain-member'
+      for (let k = 0; k < state.winSize; ++k) 
+        state.cells[(i+k)*state.xDim + (j - k)].status = 'chain-member'
       break
   }
 
