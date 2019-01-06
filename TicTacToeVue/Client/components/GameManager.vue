@@ -13,6 +13,10 @@ export default {
   components: {
     'game-field': GameField,
     'game-info': GameInfo
+  },
+
+  mounted() {
+    this.$store.commit('gameEngine/fillDefault')
   }
 }
 </script>

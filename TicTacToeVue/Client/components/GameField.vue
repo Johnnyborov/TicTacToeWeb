@@ -1,20 +1,53 @@
 <template>
 <div id="game-field">
-  <canvas id="canvas" ref="canvas" @mousedown="this.mouseDown" @mouseup="this.mouseUp"></canvas>
+  <canvas id="canvas" ref="canvas" @mousedown="mouseDown" @mouseup="mouseUp">
+    <field-cell
+      v-for="(cell,index) in $store.state.gameEngine.cells"
+      :value="cell"
+      :i="Math.floor(index / 3)"
+      :j="index % 3"
+      :key="index">
+    </field-cell>
+  </canvas>
 </div>
 </template>
 
 <script>
+function getCellIndex(ctx, e) {
+  let rect = ctx.canvas.getBoundingClientRect()
+  let x = e.clientX - rect.left
+  let y = e.clientY - rect.top
+
+  let cellWithInterspace = rect.height / 3
+  let i = Math.floor(y / cellWithInterspace)
+  let j = Math.floor(x / cellWithInterspace)
+
+  let halfCellBorderWidth = Math.round(rect.height / 40 / 2)
+  if (y%cellWithInterspace < halfCellBorderWidth || (cellWithInterspace - y%cellWithInterspace) < halfCellBorderWidth ||
+      x%cellWithInterspace < halfCellBorderWidth || (cellWithInterspace - x%cellWithInterspace) < halfCellBorderWidth)
+      return -1
+
+  return i*3 + j
+}
+
 import Resources from '../resources/resources.js'
+import FieldCell from './FieldCell.vue'
 
 export default {
   data() {
     return {
       context: null,
+
       cross: null,
       nought: null,
-      clear: null
+      clear: null,
+
+      lastPressed: -1
     }
+  },
+
+  components: {
+    'field-cell': FieldCell
   },
 
   created() {
@@ -48,64 +81,35 @@ export default {
 
   methods: {
     mouseDown: function(e) {
-      let rect = this.context.canvas.getBoundingClientRect()
-      let x = e.clientX - rect.left
-      let y = e.clientY - rect.top
+      let index = getCellIndex(this.context, e)
 
-      console.log('down',x,y)
+      if (index > -1) {
+        this.lastPressed = index
+        this.$store.commit('gameEngine/pressed', index)
+      }
     },
 
     mouseUp: function(e) {
-      let rect = this.context.canvas.getBoundingClientRect()
-      let x = e.clientX - rect.left
-      let y = e.clientY - rect.top
+      let index = getCellIndex(this.context, e)
 
-      console.log('up',x,y)
+      this.$store.commit('gameEngine/unPressed', this.lastPressed)
     },
 
     resizeHandler: function() {
       this.$refs['canvas'].width = this.$refs['canvas'].parentElement.clientWidth
       this.$refs['canvas'].height = this.$refs['canvas'].parentElement.clientHeight
 
-      this.drawCells()
+      this.drawAllCells()
     },
 
     loadedHandler: function() {
-      this.drawCells()
+      this.drawAllCells()
     },
 
-    drawCells: function() {
-      let ctx = this.context 
-
-      let halfCellBorderWidth = Math.round(ctx.canvas.width / 40 / 2)
-      let cellBorderWidth = 2 * halfCellBorderWidth
-      let imgSize = Math.round((ctx.canvas.width - cellBorderWidth*(3 * 2 + (3-1))) / 3)
-      let imgStep = (imgSize + 3 * cellBorderWidth)
-
-      ctx.lineWidth = cellBorderWidth
-
-      for (let i = 0; i < 3; i++) {
-        for (let j = 0; j < 3; j++) {
-          ctx.strokeRect(halfCellBorderWidth+imgStep*j, halfCellBorderWidth+imgStep*i, imgSize+2*halfCellBorderWidth, imgSize+2*halfCellBorderWidth)         
-
-          let cell;
-          switch(this.$store.state.gameEngine.cells[i*3+j]) {
-            case 0:
-              cell = this.clear
-              break
-            case 1:
-              cell = this.cross
-              break
-            case 2:
-              cell = this.nought
-              break
-            default:
-              throw "Invalid cell value"
-          }
-
-          ctx.drawImage(cell, cellBorderWidth+imgStep*j, cellBorderWidth+imgStep*i, imgSize, imgSize) 
-        }    
-      }
+    drawAllCells: function() {
+      this.$children.forEach(child => {
+        child.$forceUpdate()
+      });
     }
   }
 }
