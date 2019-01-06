@@ -10,12 +10,16 @@ export default {
       state.cells = Array(9).fill().map(i => ({type: 0, pressed: false}))
     },
 
-    pressed(state, index) {
+    makePressed(state, index) {
       state.cells[index].pressed = true
     },
 
-    unPressed(state, index) {
+    makeUnpressed(state, index) {
       state.cells[index].pressed = false
+    },
+
+    tryMove(state, index) {
+      state.cells[index].type = 1
     }
   }
 }

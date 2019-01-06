@@ -36,8 +36,6 @@ export default {
     else
       ctx.strokeStyle = '#048'
 
-    console.log('render')
-
     ctx.strokeRect(2*halfCellBorderWidth+imgStep*j, 2*halfCellBorderWidth+imgStep*i, imgSize+2*halfCellBorderWidth, imgSize+2*halfCellBorderWidth)         
 
     let cell;

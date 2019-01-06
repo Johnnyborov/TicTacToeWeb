@@ -1,6 +1,6 @@
 <template>
 <div id="game-field">
-  <canvas id="canvas" ref="canvas" @mousedown="mouseDown" @mouseup="mouseUp">
+  <canvas id="canvas" ref="canvas" @mousedown.prevent="mouseDown" @mouseup="mouseUp" @mouseleave="mouseLeave">
     <field-cell
       v-for="(cell,index) in $store.state.gameEngine.cells"
       :value="cell"
@@ -83,16 +83,28 @@ export default {
     mouseDown: function(e) {
       let index = getCellIndex(this.context, e)
 
+      this.lastPressed = -1
       if (index > -1) {
         this.lastPressed = index
-        this.$store.commit('gameEngine/pressed', index)
+        this.$store.commit('gameEngine/makePressed', index)
       }
     },
 
     mouseUp: function(e) {
+      if (this.lastPressed > -1)
+        this.$store.commit('gameEngine/makeUnpressed', this.lastPressed)
+      
       let index = getCellIndex(this.context, e)
+      if (this.lastPressed === index) {
+        this.$store.commit('gameEngine/tryMove', this.lastPressed)
+      }
+    },
 
-      this.$store.commit('gameEngine/unPressed', this.lastPressed)
+    mouseLeave: function(e) {
+      if (this.lastPressed > -1)
+        this.$store.commit('gameEngine/makeUnpressed', this.lastPressed)
+      
+      this.lastPressed = -1
     },
 
     resizeHandler: function() {
