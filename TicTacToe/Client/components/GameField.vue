@@ -11,6 +11,21 @@
 <script>
 import Resources from '../resources/resources.js'
 
+function getSizeAttributes(context,state) {
+  let xDim = state.xDim
+  let yDim = state.yDim
+  let maxDim = Math.max(xDim,yDim)
+
+  let cellBorderWidth = Math.floor(context.canvas.width / 12 / maxDim)
+  if (cellBorderWidth === 0) {
+    cellBorderWidth = 1
+  }
+  let imgSize = Math.floor((context.canvas.width - (maxDim*2 + maxDim-1)*cellBorderWidth) / maxDim)
+  let imgStep = (imgSize + 3*cellBorderWidth)
+
+  return {xDim: xDim, yDim: yDim, cellBorderWidth: cellBorderWidth, imgSize: imgSize, imgStep: imgStep}
+}
+
 export default {
   data() {
     return {
@@ -72,40 +87,31 @@ export default {
       if (!this.context) return
       let ctx = this.context
 
-      let xDim = this.$store.state.gameEntity.xDim
-      let yDim = this.$store.state.gameEntity.yDim
-      let maxDim = Math.max(xDim,yDim)
+      let sizes = getSizeAttributes(ctx, this.$store.state.gameEntity)
 
-      let cellBorderWidth = Math.floor(ctx.canvas.width / 12 / maxDim)
-      if (cellBorderWidth === 0) {
-        cellBorderWidth = 1
-      }
-      let imgSize = Math.floor((ctx.canvas.width - (maxDim*2 + maxDim-1)*cellBorderWidth) / maxDim)
-      let imgStep = (imgSize + 3*cellBorderWidth)
+      let i = Math.floor(index / sizes.xDim)
+      let j = index % sizes.xDim
 
+      let cell = this.$store.state.gameEntity.cells[index]
 
-      let i = Math.floor(index / this.$store.state.gameEntity.xDim)
-      let j = index % this.$store.state.gameEntity.xDim
-
-      let value = this.$store.state.gameEntity.cells[index]
-
-      if (value.status == 'pressed')
+      if (cell.status == 'pressed')
         ctx.strokeStyle = '#08F'
-      else if  (value.status == 'disabled')
+      else if  (cell.status == 'disabled')
         ctx.strokeStyle = '#444'
-      else if  (value.status == 'chain-member')
+      else if  (cell.status == 'chain-member')
         ctx.strokeStyle = '#080'
-      else if  (value.status == 'normal')
+      else if  (cell.status == 'normal')
         ctx.strokeStyle = '#048'
       else
         throw "invalid cell status"
 
-      ctx.lineWidth = cellBorderWidth
+      ctx.lineWidth = sizes.cellBorderWidth
 
-      ctx.strokeRect(cellBorderWidth/2+imgStep*j, cellBorderWidth/2+imgStep*i, imgSize+cellBorderWidth, imgSize+cellBorderWidth)
+      ctx.strokeRect(sizes.cellBorderWidth/2+sizes.imgStep*j, sizes.cellBorderWidth/2+sizes.imgStep*i,
+                    sizes.imgSize+sizes.cellBorderWidth, sizes.imgSize+sizes.cellBorderWidth)
 
       let cellImg;
-      switch(value.type) {
+      switch(cell.type) {
         case 'clear':
           cellImg = this.clearImg
           break
@@ -119,38 +125,30 @@ export default {
           throw "Invalid cell type"
       }
 
-      ctx.drawImage(cellImg, cellBorderWidth+imgStep*j, cellBorderWidth+imgStep*i, imgSize, imgSize)
+      ctx.drawImage(cellImg, sizes.cellBorderWidth+sizes.imgStep*j, sizes.cellBorderWidth+sizes.imgStep*i,
+                    sizes.imgSize, sizes.imgSize)
     },
 
     getCellIndex: function(e) {
-      let xDim = this.$store.state.gameEntity.xDim
-      let yDim = this.$store.state.gameEntity.yDim
-      let maxDim = Math.max(xDim,yDim)
-
-      let halfCellBorderWidth = Math.floor(this.context.canvas.width / 25 / maxDim)
-      let cellBorderWidth = 2 * halfCellBorderWidth
-      if (halfCellBorderWidth === 0) {
-        cellBorderWidth = 1
-      }
-      let imgSize = Math.floor((this.context.canvas.width - maxDim*3*cellBorderWidth) / maxDim)
-      let imgStep = (imgSize + 3*cellBorderWidth)
-
+      let sizes = getSizeAttributes(this.context, this.$store.state.gameEntity)
 
       let rect = this.context.canvas.getBoundingClientRect()
       let x = e.clientX - rect.left
       let y = e.clientY - rect.top
 
-      let i = Math.floor(y / imgStep)
-      let j = Math.floor(x / imgStep)
+      let i = Math.floor(y / sizes.imgStep)
+      let j = Math.floor(x / sizes.imgStep)
 
-      if (i >= yDim || j >= xDim)
+      if (i >= sizes.yDim || j >= sizes.xDim)
         return -1
 
-      if (y%imgStep < halfCellBorderWidth || (imgStep - y%imgStep) < halfCellBorderWidth ||
-          x%imgStep < halfCellBorderWidth || (imgStep - x%imgStep) < halfCellBorderWidth)
-          return -1
+      if (y%sizes.imgStep < sizes.CellBorderWidth/2 ||
+          (sizes.imgStep - y%sizes.imgStep) < sizes.CellBorderWidth/2 ||
+          x%sizes.imgStep < sizes.CellBorderWidth/2 ||
+          (sizes.imgStep - x%sizes.imgStep) < sizes.CellBorderWidth/2)
+        return -1
 
-      return i*xDim + j
+      return i*sizes.xDim + j
     }
   }
 }

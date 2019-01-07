@@ -75,7 +75,7 @@ export default {
     },
 
     changeSizes: function(dimensions) {
-      let state = this.$store.state
+      let state = this.$store.state.gameEntity
 
       let {xDim, yDim, winSize} = dimensions
 

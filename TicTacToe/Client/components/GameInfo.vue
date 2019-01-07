@@ -4,15 +4,15 @@
   <div id="game-sizes">
     <div>
       <label>x-dim:</label>
-      <input v-model="dimensions.xDim"/>
+      <input v-model.number="dimensions.xDim" type="number" :min="limits.minXDim" :max="limits.maxXDim">
     </div>
     <div>
       <label>y-dim:</label>
-      <input v-model="dimensions.yDim"/>
+      <input v-model.number="dimensions.yDim" type="number" :min="limits.minYDim" :max="limits.maxYDim"/>
     </div>
     <div>
       <label>win-size:</label>
-      <input v-model="dimensions.winSize"/>
+      <input v-model.number="dimensions.winSize" type="number" :min="limits.minWinSize" :max="limits.maxWinSize"/>
     </div>
     <button @click="$emit('sizes-click', dimensions)">Apply</button>
   </div>
@@ -21,13 +21,25 @@
 </template>
 
 <script>
+import {dimLimits} from '../store/modules/gameEntity.js'
+
 export default {
   data() {
     return {
       dimensions: {
-        xDim: 3,
-        yDim: 3,
-        winSize: 3
+        xDim: this.$store.state.gameEntity.xDim,
+        yDim: this.$store.state.gameEntity.yDim,
+        winSize: this.$store.state.gameEntity.winSize
+      },
+
+      limits: {
+        minXDim: dimLimits.minXDim,
+        minYDim: dimLimits.minYDim,
+        minWinSize: dimLimits.minWinSize,
+
+        maxXDim: dimLimits.maxXDim,
+        maxYDim: dimLimits.maxYDim,
+        maxWinSize: dimLimits.maxWinSize
       }
     }
   },
@@ -87,8 +99,8 @@ export default {
 
   input {
     box-sizing: border-box;
-    width: 50%;
-    margin: 0 10% 0 0;
+    width: 75%;
+    margin: 0 5% 0 0;
   }
 
   @media (orientation: landscape) {
@@ -108,7 +120,7 @@ export default {
     }
 
     input {
-      width: 20%;
+      width: 25%;
       margin: 0 10% 0 0;
     }
   }
