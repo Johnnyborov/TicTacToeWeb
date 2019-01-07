@@ -1,12 +1,13 @@
-﻿/// <binding BeforeBuild='Run - Production' />
-var path = require('path')
-const VueLoaderPlugin = require('vue-loader/lib/plugin'); // плагин для загрузки кода Vue
+﻿var path = require('path')
+const VueLoaderPlugin = require('vue-loader/lib/plugin')
 
 module.exports = {
-  entry: './Client/main.js',
+  entry: [
+    '@babel/polyfill',
+    './Client/main.js'
+  ],
   output: {
     path: path.resolve(__dirname, './wwwroot/js'),
-    publicPath: '/wwwroot/js/',
     filename: 'build.js'
   },
   module: {
@@ -14,18 +15,28 @@ module.exports = {
       {
         test: /\.vue$/,
         loader: 'vue-loader'
-      }, {
+      },
+      {
+        test: /\.js$/,
+        loader: 'babel-loader'
+      },
+      {
         test: /\.css$/,
         use: [
           'vue-style-loader',
           'css-loader'
         ]
-      }, {
+      },
+      {
         test: /\.(png|jpg|gif)$/,
         use: [
           {
             loader: 'file-loader',
-            options: {},
+            options: {
+              name: '[path][name].[ext]',
+              context: 'Client/resources',
+              outputPath: '../', // path for generated files (wwwroot/js/* => wwwroot/*)
+            },
           },
         ],
       },
@@ -36,7 +47,7 @@ module.exports = {
   ],
   devServer: {
     contentBase: path.join(__dirname, 'wwwroot'),
-    publicPath: '/js/',
+    publicPath: '/js/', // path for virtual build.js
     historyApiFallback: {
       index: 'index.html'
     },

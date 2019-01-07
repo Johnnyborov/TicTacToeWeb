@@ -3,14 +3,18 @@
   "name": "vueapp",
   "private": true,
   "scripts": {
-    "dev": "webpack-dev-server --hot --open --mode development --devtool source-map",
+    "dev": "webpack-dev-server --hot --mode development --devtool source-map",
     "build": "webpack --mode production"
   },
   "dependencies": {
+    "@babel/polyfill": ">=7.1.0",
     "vue": ">=2.5.17",
     "vuex": ">=3.0.1"
   },
   "devDependencies": {
+    "@babel/core": ">=7.1.2",
+    "@babel/preset-env": ">=7.1.0",
+    "babel-loader": ">=8.0.1",
     "vue-loader": ">=15.4.2",
     "vue-template-compiler": ">=2.5.17",
     "css-loader": ">=2.0.0",

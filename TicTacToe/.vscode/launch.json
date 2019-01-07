@@ -15,7 +15,7 @@
         "webpack:///./Client/*.js": "${workspaceRoot}/Client/*.js",
         "webpack:///Client/*.vue": "${workspaceRoot}/Client/*.vue",
         "webpack:///./node_modules/*": "${workspaceRoot}/node_modules/*"
-    }
+      }
     }
   ]
 }
