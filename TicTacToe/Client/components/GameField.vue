@@ -4,26 +4,14 @@
   @mousedown.prevent="$emit('mouse-down', getCellIndex($event))"
   @mouseup="$emit('mouse-up', getCellIndex($event))"
   @mouseleave="$emit('mouse-leave')">
-    <field-cell
-      v-for="(cell,index) in $store.state.gameEntity.cells"
-      :value="cell"
-      :i="Math.floor(index / $store.state.gameEntity.xDim)"
-      :j="index % $store.state.gameEntity.xDim"
-      :key="index">
-    </field-cell>
   </canvas>
 </div>
 </template>
 
 <script>
 import Resources from '../resources/resources.js'
-import FieldCell from './FieldCell.vue'
 
 export default {
-  components: {
-    'field-cell': FieldCell
-  },
-
   data() {
     return {
       context: null,
@@ -75,9 +63,63 @@ export default {
     drawAllCells: function() {
       this.context.clearRect(0,0,this.context.canvas.width,this.context.canvas.height)
 
-      this.$children.forEach(child => {
-        child.$forceUpdate()
-      });
+      for (let index = 0; index < this.$store.state.gameEntity.cells.length; index++) {
+        this.drawCell(index)
+      }
+    },
+
+    drawCell(index) {
+      if (!this.context) return
+      let ctx = this.context
+
+      let xDim = this.$store.state.gameEntity.xDim
+      let yDim = this.$store.state.gameEntity.yDim
+      let maxDim = Math.max(xDim,yDim)
+
+      let cellBorderWidth = Math.floor(ctx.canvas.width / 12 / maxDim)
+      if (cellBorderWidth === 0) {
+        cellBorderWidth = 1
+      }
+      let imgSize = Math.floor((ctx.canvas.width - (maxDim*2 + maxDim-1)*cellBorderWidth) / maxDim)
+      let imgStep = (imgSize + 3*cellBorderWidth)
+
+
+      let i = Math.floor(index / this.$store.state.gameEntity.xDim)
+      let j = index % this.$store.state.gameEntity.xDim
+
+      let value = this.$store.state.gameEntity.cells[index]
+
+      if (value.status == 'pressed')
+        ctx.strokeStyle = '#08F'
+      else if  (value.status == 'disabled')
+        ctx.strokeStyle = '#444'
+      else if  (value.status == 'chain-member')
+        ctx.strokeStyle = '#080'
+      else if  (value.status == 'normal')
+        ctx.strokeStyle = '#048'
+      else
+        throw "invalid cell status"
+
+      ctx.lineWidth = cellBorderWidth
+
+      ctx.strokeRect(cellBorderWidth/2+imgStep*j, cellBorderWidth/2+imgStep*i, imgSize+cellBorderWidth, imgSize+cellBorderWidth)
+
+      let cellImg;
+      switch(value.type) {
+        case 'clear':
+          cellImg = this.clearImg
+          break
+        case 'cross':
+          cellImg = this.crossImg
+          break
+        case 'nought':
+          cellImg = this.noughtImg
+          break
+        default:
+          throw "Invalid cell type"
+      }
+
+      ctx.drawImage(cellImg, cellBorderWidth+imgStep*j, cellBorderWidth+imgStep*i, imgSize, imgSize)
     },
 
     getCellIndex: function(e) {

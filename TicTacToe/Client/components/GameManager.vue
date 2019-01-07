@@ -9,6 +9,8 @@
 import GameField from './GameField.vue'
 import GameInfo from './GameInfo.vue'
 
+import {validateDimensions} from '../store/modules/gameEntity.js'
+
 export default {
   components: {
     'game-field': GameField,
@@ -26,10 +28,10 @@ export default {
 
     this.$store.watch(
       function(state) {
-        return {x: state.gameEntity.xDim, y: state.gameEntity.yDim}
+        return {x: state.gameEntity.xDim, y: state.gameEntity.yDim, gameOver: state.gameEntity.gameOver}
       },
       () => {
-        this.$children[0].drawAllCells();
+        this.$children[0].drawAllCells()
       }
     )
   },
@@ -40,31 +42,47 @@ export default {
       if (index > -1) {
         this.lastPressed = index
         this.$store.commit('gameEntity/setPressed', index)
+        this.$children[0].drawCell(index)
       }
     },
 
     cellMouseUp: function(index) {
       if (this.lastPressed > -1)
+      {
         this.$store.commit('gameEntity/setUnpressed', this.lastPressed)
+        this.$children[0].drawCell(this.lastPressed)
+      }
       
       if (index > -1 && index === this.lastPressed) {
-        this.$store.commit('gameEntity/tryMove', this.lastPressed)
+        this.$store.commit('gameEntity/tryMove', index)
+        this.$children[0].drawCell(index)
       }
     },
 
     cellMouseLeave: function() {
       if (this.lastPressed > -1)
+      {
         this.$store.commit('gameEntity/setUnpressed', this.lastPressed)
+        this.$children[0].drawCell(this.lastPressed)
+      }
       
       this.lastPressed = -1
     },
 
     resetGame: function() {
       this.$store.commit('gameEntity/fillDefault')
+      this.$children[0].drawAllCells()
     },
 
     changeSizes: function(dimensions) {
+      let state = this.$store.state
+
+      let {xDim, yDim, winSize} = dimensions
+
+      if (!validateDimensions(state, dimensions)) return
+
       this.$store.commit('gameEntity/changeSizes', dimensions)
+      this.$children[0].drawAllCells()
     }
   }
 }

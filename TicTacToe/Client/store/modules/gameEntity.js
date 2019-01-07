@@ -15,6 +15,16 @@ function resetGame(state) {
   state.cells = Array(state.xDim*state.yDim).fill().map(i => ({type: 'clear', status: 'normal'}))
 }
 
+export function validateDimensions(state, {xDim, yDim, winSize}) {
+  if (xDim < minXDim || yDim < minYDim || winSize < minWinSize ||
+    xDim > maxXDim || yDim > maxYDim || winSize > maxWinSize ||
+    xDim === state.xDim && yDim === state.yDim && winSize === state.winSize ||
+    minWinSize > Math.min(xDim,yDim))
+    return false
+  else
+    return true
+}
+
 export default {
   namespaced: true,
   
@@ -34,18 +44,10 @@ export default {
     },
 
     changeSizes(state, {xDim, yDim, winSize}) {
-      if (winSize >= minWinSize && winSize <= maxWinSize &&
-          minWinSize <= Math.min(xDim,yDim) && winSize !== state.winSize) {
-        state.winSize = winSize
-      }
-
-      if (xDim < minXDim || yDim < minYDim ||
-          xDim > maxXDim || yDim > maxYDim ||
-          xDim === state.xDim && yDim === state.yDim)
-        return
-
       state.xDim = xDim
       state.yDim = yDim
+      state.winSize = winSize
+      
       resetGame(state)
     },
 
