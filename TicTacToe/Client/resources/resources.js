@@ -1,5 +1,16 @@
 export default {
-  cross: require('../resources/images/cross.png'),
-  nought: require('../resources/images/nought.png'),
-  clear: require('../resources/images/clear.png')
+  getCellIcons() {
+    let cellIcons = {}
+
+    cellIcons.clearImg = new Image()
+    cellIcons.clearImg.src = require('../resources/images/clear.png')
+
+    cellIcons.crossImg = new Image()
+    cellIcons.crossImg.src = require('../resources/images/cross.png')
+
+    cellIcons.noughtImg = new Image()
+    cellIcons.noughtImg.src = require('../resources/images/nought.png')
+
+    return cellIcons
+  }
 }

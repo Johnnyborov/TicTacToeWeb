@@ -19,4 +19,4 @@
     }
   ]
 }
-// ChromeDevTools => source: put webpack files with corresponding project files
+// ChromeDevTools => source: map webpack files with corresponding project files

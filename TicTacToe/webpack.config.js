@@ -47,7 +47,7 @@ module.exports = {
   ],
   devServer: {
     contentBase: path.join(__dirname, 'wwwroot'),
-    publicPath: '/js/', // path for virtual build.js
+    publicPath: '/js/', // path to virtual build.js
     historyApiFallback: {
       index: 'index.html'
     },

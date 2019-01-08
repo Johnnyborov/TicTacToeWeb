@@ -13,14 +13,14 @@
 import GameManager from './GameManager.vue'
 
 export default {
+  components: {
+    'game-manager': GameManager
+  },
+
   data() {
     return {
       message: 'TicTacToe',
     }
-  },
-
-  components: {
-    'game-manager': GameManager
   }
 }
 </script>
@@ -78,7 +78,7 @@ export default {
     font-size: 3vmin;
   }
 
-  h3, h4, h5, button {
+  h3, h5, button {
     padding: 0;
     border: 0;
     margin: 0;

@@ -1,17 +1,39 @@
 <template>
 <div id="game-field">
   <canvas id="canvas" ref="canvas"
-  @mousedown.prevent="$emit('mouse-down', getCellIndex($event))"
-  @mouseup="$emit('mouse-up', getCellIndex($event))"
-  @mouseleave="$emit('mouse-leave')"
-  @touchstart.prevent="touchStartHandler($event)"
-  @touchend="touchEndHandler($event)">
+          @mousedown.prevent="mouseDownHandler($event)"
+          @mouseup="mouseUpHandler($event)"
+          @mouseleave="mouseLeaveHandler()"
+          @touchstart.prevent="touchStartHandler($event)"
+          @touchend="touchEndHandler($event)">
   </canvas>
 </div>
 </template>
 
 <script>
 import Resources from '../resources/resources.js'
+
+function getCellIndex(event, context, state) {
+  let {xDim,yDim,cellBorderWidth,imgSize,imgStep} = getSizeAttributes(context, state)
+
+  // get mouse coordinates relative to canvas
+  let rect = context.canvas.getBoundingClientRect()
+  let x = event.clientX - rect.left
+  let y = event.clientY - rect.top
+
+  let i = Math.floor(y / imgStep)
+  let j = Math.floor(x / imgStep)
+
+  if (i > yDim-1 || j > xDim-1)
+    return -1
+
+  // if coords got between the cells
+  if ((imgStep - x%imgStep) < cellBorderWidth ||
+      (imgStep - y%imgStep) < cellBorderWidth)
+    return -1
+
+  return i*xDim + j
+}
 
 function getSizeAttributes(context,state) {
   let xDim = state.xDim
@@ -22,10 +44,45 @@ function getSizeAttributes(context,state) {
   if (cellBorderWidth === 0) {
     cellBorderWidth = 1
   }
+
+  // (width - ((2 borders for each cell) + (1 space between them - 1))) / maxDim
   let imgSize = Math.floor((context.canvas.width - (maxDim*2 + maxDim-1)*cellBorderWidth) / maxDim)
   let imgStep = (imgSize + 3*cellBorderWidth)
 
   return {xDim: xDim, yDim: yDim, cellBorderWidth: cellBorderWidth, imgSize: imgSize, imgStep: imgStep}
+}
+
+function getCellBorderStyle(look) {
+  switch(look) {
+    case 'pressed':
+      return '#08F'
+    case 'disabled':
+      return '#444'
+    case 'chain-member':
+      return '#080'
+    case 'normal':
+      return '#048'
+    default:
+      throw "Invalid cellLook"
+  }
+}
+
+function getCellImg(type, cellIcons) {
+  switch(type) {
+    case 'clear':
+      return cellIcons.clearImg
+    case 'cross':
+      return cellIcons.crossImg
+    case 'nought':
+      return cellIcons.noughtImg
+    default:
+      throw "Invalid cellType"
+  }
+}
+
+function setCanvasSizes(canvas) {
+  canvas.width = canvas.parentElement.clientWidth
+  canvas.height = canvas.parentElement.clientHeight
 }
 
 export default {
@@ -33,49 +90,98 @@ export default {
     return {
       context: null,
 
-      clearImg: null,
-      crossImg: null,
-      noughtImg: null,
+      usubscribeMutations: null,
 
+      cellIcons: {
+        clearImg: null,
+        crossImg: null,
+        noughtImg: null
+      },
+      
+      lastPressedCellIndex: -1,
       lastTouch: null
+    }
+  },
+
+  computed: {
+    state() {
+      return this.$store.state.gameEntity
+    },
+
+    gameOver() {
+      return this.state.gameOver
+    }
+  },
+
+  watch: {
+    gameOver() {
+      this.drawAllCells()
     }
   },
 
   created() {
     window.addEventListener("resize", this.resizeHandler)
     window.addEventListener('load', this.loadedHandler)
+
+    this.usubscribeMutations = this.$store.subscribe((mutation,state) => {
+      switch(mutation.type) {
+        case 'gameEntity/makeMove':
+          this.drawCell(mutation.payload, 'normal') // payload is cellIndex
+          break
+        case 'gameEntity/newGame':
+        case 'gameEntity/changeSizes':
+          this.drawAllCells()
+          break
+      }
+    })
   },
   
   destroyed() {
+    this.usubscribeMutations()
+
     window.removeEventListener("resize", this.resizeHandler)
     window.removeEventListener('load', this.loadedHandler)
   },
 
   mounted() {
+    setCanvasSizes(this.$refs['canvas'])
     this.context = this.$refs['canvas'].getContext('2d')
-
-    this.$refs['canvas'].width = this.$refs['canvas'].parentElement.clientWidth
-    this.$refs['canvas'].height = this.$refs['canvas'].parentElement.clientHeight
-
-    this.clearImg = new Image()
-    this.clearImg.src = Resources.clear
-
-    this.crossImg = new Image()
-    this.crossImg.src = Resources.cross
-
-    this.noughtImg = new Image()
-    this.noughtImg.src = Resources.nought
+    this.cellIcons = Resources.getCellIcons()
   },
 
   methods: { 
+    resizeHandler() {
+      setCanvasSizes(this.$refs['canvas'])
+      this.drawAllCells()
+    },
+
+    // waiting for images to load before first draw
+    loadedHandler() {
+      this.drawAllCells()
+    },
+
+    mouseDownHandler(event) {
+      let index = getCellIndex(event, this.context, this.$store.state.gameEntity)
+      this.cellMouseDown(index)
+    },
+
+    mouseUpHandler(event) {
+      let index = getCellIndex(event, this.context, this.$store.state.gameEntity)
+      this.cellMouseUp(index)
+    },
+
+    mouseLeaveHandler() {
+      this.cellMouseUp(-1)
+    },
+
     touchStartHandler(e) {
       // deactivate prevoius mouse-down if more than one touch happens simultaneously
       if (e.touches.length > 1) {
-        this.$emit('mouse-up', -1)
+        this.cellMouseUp(-1)
       }
 
       // handle new one
-      this.$emit('mouse-down', this.getCellIndex(e.touches[e.touches.length-1]))
+      this.cellMouseDown(getCellIndex(e.touches[e.touches.length-1], this.context, this.$store.state.gameEntity))
       this.lastTouch = e.touches[e.touches.length-1]
     },
 
@@ -89,96 +195,80 @@ export default {
       }
 
       if (removed) {
-        this.$emit('mouse-up', this.getCellIndex(this.lastTouch))
+        this.cellMouseUp(getCellIndex(this.lastTouch, this.context, this.state))
         this.lastTouch = null
       }
     },
 
-    resizeHandler: function() {
-      this.$refs['canvas'].width = this.$refs['canvas'].parentElement.clientWidth
-      this.$refs['canvas'].height = this.$refs['canvas'].parentElement.clientHeight
 
-      this.drawAllCells()
+    cellMouseDown(index) {
+      if (index > -1 && !this.state.gameOver && this.state.cells[index] === 'clear'
+      ) {
+        // set pressed cell look
+        this.lastPressedCellIndex = index
+        this.drawCell(index, 'pressed')
+      } else {
+        this.lastPressedCellIndex = -1
+      }
     },
 
-    loadedHandler: function() {
-      this.drawAllCells()
+    cellMouseUp(index) {
+      if (index > -1 && index === this.lastPressedCellIndex &&
+          !this.state.gameOver && this.state.cells[index] === 'clear'
+      ) {
+        // make the actual move
+        this.$emit('cell-clicked', index)
+      } else if (this.lastPressedCellIndex > -1) {
+        // restore normal cell look
+        this.drawCell(this.lastPressedCellIndex, 'normal')
+      }
+
+      this.lastPressedCellIndex = -1
     },
 
-    drawAllCells: function() {
+
+    drawAllCells() {
       this.context.clearRect(0,0,this.context.canvas.width,this.context.canvas.height)
 
-      for (let index = 0; index < this.$store.state.gameEntity.cells.length; index++) {
-        this.drawCell(index)
+      let look = ''
+      if (this.state.gameOver) {
+        look = 'disabled'
+      } else {
+        look = 'normal'
+      }
+
+      // draw all cells with 'disabled' or 'normal' look
+      for (let index = 0; index < this.state.cells.length; index++) {
+        this.drawCell(index, look)
+      }
+
+      if (this.state.gameOver) {
+        // redraw win chain cells with 'chain-member' look
+        this.state.winChainIndexes.forEach( index => {
+          this.drawCell(index, 'chain-member')
+        })
       }
     },
 
-    drawCell(index) {
+    drawCell(index, cellLook) {
       if (!this.context) return
-      let ctx = this.context
+      let context = this.context
 
-      let sizes = getSizeAttributes(ctx, this.$store.state.gameEntity)
+      let {xDim,yDim,cellBorderWidth,imgSize,imgStep} = getSizeAttributes(context, this.state)
 
-      let i = Math.floor(index / sizes.xDim)
-      let j = index % sizes.xDim
+      context.strokeStyle = getCellBorderStyle(cellLook)
+      context.lineWidth = cellBorderWidth
 
-      let cell = this.$store.state.gameEntity.cells[index]
+      let i = Math.floor(index / xDim)
+      let j = index % xDim
 
-      if (cell.status == 'pressed')
-        ctx.strokeStyle = '#08F'
-      else if  (cell.status == 'disabled')
-        ctx.strokeStyle = '#444'
-      else if  (cell.status == 'chain-member')
-        ctx.strokeStyle = '#080'
-      else if  (cell.status == 'normal')
-        ctx.strokeStyle = '#048'
-      else
-        throw "invalid cell status"
+      // draw cell border
+      context.strokeRect(cellBorderWidth/2+imgStep*j, cellBorderWidth/2+imgStep*i,
+                        imgSize+cellBorderWidth, imgSize+cellBorderWidth)
 
-      ctx.lineWidth = sizes.cellBorderWidth
-
-      ctx.strokeRect(sizes.cellBorderWidth/2+sizes.imgStep*j, sizes.cellBorderWidth/2+sizes.imgStep*i,
-                    sizes.imgSize+sizes.cellBorderWidth, sizes.imgSize+sizes.cellBorderWidth)
-
-      let cellImg;
-      switch(cell.type) {
-        case 'clear':
-          cellImg = this.clearImg
-          break
-        case 'cross':
-          cellImg = this.crossImg
-          break
-        case 'nought':
-          cellImg = this.noughtImg
-          break
-        default:
-          throw "Invalid cell type"
-      }
-
-      ctx.drawImage(cellImg, sizes.cellBorderWidth+sizes.imgStep*j, sizes.cellBorderWidth+sizes.imgStep*i,
-                    sizes.imgSize, sizes.imgSize)
-    },
-
-    getCellIndex: function(e) {
-      let sizes = getSizeAttributes(this.context, this.$store.state.gameEntity)
-
-      let rect = this.context.canvas.getBoundingClientRect()
-      let x = e.clientX - rect.left
-      let y = e.clientY - rect.top
-
-      let i = Math.floor(y / sizes.imgStep)
-      let j = Math.floor(x / sizes.imgStep)
-
-      if (i >= sizes.yDim || j >= sizes.xDim)
-        return -1
-
-      if (y%sizes.imgStep < sizes.CellBorderWidth/2 ||
-          (sizes.imgStep - y%sizes.imgStep) < sizes.CellBorderWidth/2 ||
-          x%sizes.imgStep < sizes.CellBorderWidth/2 ||
-          (sizes.imgStep - x%sizes.imgStep) < sizes.CellBorderWidth/2)
-        return -1
-
-      return i*sizes.xDim + j
+      // draw cell icon
+      let cellImg = getCellImg(this.state.cells[index], this.cellIcons) 
+      context.drawImage(cellImg, cellBorderWidth+imgStep*j, cellBorderWidth+imgStep*i, imgSize, imgSize)
     }
   }
 }

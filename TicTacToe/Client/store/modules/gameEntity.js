@@ -1,4 +1,59 @@
-import makeMove from './gameEntityMakeMoveImpl.js'
+import GameChecker from './gameEntityGameChecker.js'
+
+function _newGame(state) {
+  state.gameOver = false
+  state.movesCount = 0
+  state.winner = ''
+  state.winChainIndexes = []
+  state.cells = Array(state.xDim*state.yDim).fill().map(i => 'clear')
+}
+
+function setCellNewType(state, index) {
+  if (state.movesCount%2 == 0) {
+    state.cells[index] = 'cross'
+  } else if (state.movesCount%2 == 1) {
+    state.cells[index] = 'nought'
+  }
+  state.movesCount++
+}
+
+function finishGame(state, conditions) {
+  if (conditions.direction !== 'draw' && state.movesCount%2 == 1) {
+    state.winner = 'crosses'
+  }
+  else if (conditions.direction !== 'draw' && state.movesCount%2 == 0) {
+    state.winner = 'noughts'
+  }
+  else {
+    state.winner = 'draw'
+  }
+
+  state.gameOver = true
+
+  setWinChainIndexes(state, conditions)
+}
+
+// winSize cells in one of 4 directions starting from cell (i,j)
+function setWinChainIndexes(state, {direction, i, j}) {
+  switch(direction) {
+    case 'right':
+      for (let k = 0; k < state.winSize; k++) 
+        state.winChainIndexes.push(i*state.xDim + (j + k))
+      break
+    case 'down':
+      for (let k = 0; k < state.winSize; k++) 
+        state.winChainIndexes.push((i+k)*state.xDim + j)
+      break
+    case 'right+down':
+      for (let k = 0; k < state.winSize; k++) 
+        state.winChainIndexes.push((i+k)*state.xDim + (j + k))
+      break
+    case 'left+down':
+      for (let k = 0; k < state.winSize; k++) 
+        state.winChainIndexes.push((i+k)*state.xDim + (j - k))
+      break
+  }
+}
 
 export const dimLimits = {
   minXDim: 3,
@@ -7,23 +62,6 @@ export const dimLimits = {
   maxXDim: 100,
   maxYDim: 100,
   maxWinSize: 30
-}
-
-export function validateDimensions(state, {xDim, yDim, winSize}) {
-  if (xDim < dimLimits.minXDim || yDim < dimLimits.minYDim || winSize < dimLimits.minWinSize ||
-      xDim > dimLimits.maxXDim || yDim > dimLimits.maxYDim || winSize > dimLimits.maxWinSize ||
-      winSize > Math.min(xDim,yDim) ||
-      xDim === state.xDim && yDim === state.yDim && winSize === state.winSize)
-    return false
-  else
-    return true
-}
-
-function resetGame(state) {
-  state.gameOver = false
-  state.movesCount = 0
-  state.winner = ''
-  state.cells = Array(state.xDim*state.yDim).fill().map(i => ({type: 'clear', status: 'normal'}))
 }
 
 export default {
@@ -36,12 +74,13 @@ export default {
     xDim: 25,
     yDim: 25,
     winSize: 5,
+    winChainIndexes: [],
     cells: []
   },
 
   mutations: {
-    fillDefault(state) {
-      resetGame(state)
+    newGame(state) {
+      _newGame(state)
     },
 
     changeSizes(state, {xDim, yDim, winSize}) {
@@ -49,23 +88,14 @@ export default {
       state.yDim = yDim
       state.winSize = winSize
       
-      resetGame(state)
+      _newGame(state)
     },
 
-    setPressed(state, index) {
-      if (!state.gameOver && state.cells[index].type === 'clear')
-        state.cells[index].status = 'pressed'
-    },
+    makeMove(state, index) {
+      setCellNewType(state, index)
 
-    setUnpressed(state, index) {
-      if (state.cells[index].status === 'pressed')
-        state.cells[index].status = 'normal'
-    },
-
-    tryMove(state, index) {
-      if (!state.gameOver && state.cells[index].type === 'clear') {
-        makeMove(state, index)
-      }
+      let {over, direction} = GameChecker.checkGame(state)
+      if (over) finishGame(state, direction)
     }
   }
 }

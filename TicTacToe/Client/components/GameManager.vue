@@ -1,6 +1,6 @@
 <template>
   <div id="game-manager">
-    <game-field @mouse-down="cellMouseDown" @mouse-up="cellMouseUp" @mouse-leave="cellMouseLeave"></game-field>
+    <game-field @cell-clicked="cellClicked"></game-field>
     <game-info @reset-click="resetGame" @sizes-click="changeSizes"></game-info>
   </div>
 </template>
@@ -9,81 +9,27 @@
 import GameField from './GameField.vue'
 import GameInfo from './GameInfo.vue'
 
-import {validateDimensions} from '../store/modules/gameEntity.js'
-
 export default {
   components: {
     'game-field': GameField,
     'game-info': GameInfo
   },
 
-  data() {
-    return {
-      lastPressed: -1
-    }
-  },
-
   mounted() {
-    this.$store.commit('gameEntity/fillDefault')
-
-    this.$store.watch(
-      function(state) {
-        return {x: state.gameEntity.xDim, y: state.gameEntity.yDim, gameOver: state.gameEntity.gameOver}
-      },
-      () => {
-        this.$children[0].drawAllCells()
-      }
-    )
+    this.$store.commit('gameEntity/newGame')
   },
 
   methods: {
-    cellMouseDown: function(index) {
-      this.lastPressed = -1
-      if (index > -1) {
-        this.lastPressed = index
-        this.$store.commit('gameEntity/setPressed', index)
-        this.$children[0].drawCell(index)
-      }
+    cellClicked(index) {
+      this.$store.commit('gameEntity/makeMove', index)
     },
 
-    cellMouseUp: function(index) {
-      if (this.lastPressed > -1)
-      {
-        this.$store.commit('gameEntity/setUnpressed', this.lastPressed)
-        this.$children[0].drawCell(this.lastPressed)
-      }
-      
-      if (index > -1 && index === this.lastPressed) {
-        this.$store.commit('gameEntity/tryMove', index)
-        this.$children[0].drawCell(index)
-      }
+    resetGame() {
+      this.$store.commit('gameEntity/newGame')
     },
 
-    cellMouseLeave: function() {
-      if (this.lastPressed > -1)
-      {
-        this.$store.commit('gameEntity/setUnpressed', this.lastPressed)
-        this.$children[0].drawCell(this.lastPressed)
-      }
-      
-      this.lastPressed = -1
-    },
-
-    resetGame: function() {
-      this.$store.commit('gameEntity/fillDefault')
-      this.$children[0].drawAllCells()
-    },
-
-    changeSizes: function(dimensions) {
-      let state = this.$store.state.gameEntity
-
-      let {xDim, yDim, winSize} = dimensions
-
-      if (typeof(xDim) !== 'number' || typeof(yDim) !== 'number' || typeof(winSize) !== 'number'||
-          !validateDimensions(state, dimensions)) return
-
+    changeSizes(dimensions) {
       this.$store.commit('gameEntity/changeSizes', dimensions)
-      this.$children[0].drawAllCells()
     }
   }
 }

@@ -4,33 +4,52 @@
   <div id="game-dims">
     <div>
       <label>x-dim:</label>
-      <input v-model.number="dimensions.xDim" type="number" :min="limits.minXDim" :max="limits.maxXDim" required>
+      <input v-model.trim.number="xDim" type="number"
+            :min="limits.minXDim" :max="limits.maxXDim" required>
     </div>
     <div>
       <label>y-dim:</label>
-      <input v-model.number="dimensions.yDim" type="number" :min="limits.minYDim" :max="limits.maxYDim" required/>
+      <input v-model.trim.number="yDim" type="number"
+            :min="limits.minYDim" :max="limits.maxYDim" required/>
     </div>
     <div>
       <label>win-size:</label>
-      <input v-model.number="dimensions.winSize" type="number" :min="limits.minWinSize" :max="limits.maxWinSize" required/>
+      <input v-model.trim.number="winSize" type="number"
+            :min="limits.minWinSize" :max="limits.maxWinSize" required/>
     </div>
-    <button id="apply-btn" class="game-btn" @click="$emit('sizes-click', dimensions)">Apply</button>
+    <button id="apply-btn" class="game-btn" @click="applyButtonHandler">Apply</button>
   </div>
-  <button id="reset-btn" class="game-btn" @click="$emit('reset-click')">Reset</button>
+  <button id="reset-btn" class="game-btn" @click="resetButtonHandler">Reset</button>
 </div>
 </template>
 
 <script>
 import {dimLimits} from '../store/modules/gameEntity.js'
 
+function dimensionsAreValid({xDim, yDim, winSize}) {
+  if (typeof(xDim) !== 'number' || typeof(yDim) !== 'number' || typeof(winSize) !== 'number'||
+      xDim < dimLimits.minXDim || yDim < dimLimits.minYDim || winSize < dimLimits.minWinSize ||
+      xDim > dimLimits.maxXDim || yDim > dimLimits.maxYDim || winSize > dimLimits.maxWinSize ||
+      winSize > Math.min(xDim,yDim)
+      )
+    return false
+  else
+    return true
+}
+
+function dimensionsChanged(state, {xDim, yDim, winSize}) {
+  if (xDim === state.xDim && yDim === state.yDim && winSize === state.winSize)
+    return false
+  else
+    return true
+}
+
 export default {
   data() {
     return {
-      dimensions: {
-        xDim: this.$store.state.gameEntity.xDim,
-        yDim: this.$store.state.gameEntity.yDim,
-        winSize: this.$store.state.gameEntity.winSize
-      },
+      xDim: this.$store.state.gameEntity.xDim,
+      yDim: this.$store.state.gameEntity.yDim,
+      winSize: this.$store.state.gameEntity.winSize,
 
       limits: {
         minXDim: dimLimits.minXDim,
@@ -66,6 +85,46 @@ export default {
 
       return result
     }
+  },
+
+  watch: {
+    xDim(newVal, oldVal) {
+      if (typeof(newVal) !== 'number') {
+        this.xDim = oldVal-1 // force input update
+        this.xDim = oldVal
+      }
+    },
+
+    yDim(newVal, oldVal) {
+      if (typeof(newVal) !== 'number') {
+        this.yDim = oldVal-1 // force input update
+        this.yDim = oldVal
+      }
+    },
+
+    winSize(newVal, oldVal) {
+      if (typeof(newVal) !== 'number') {
+        this.winSize = oldVal-1 // force input update
+        this.winSize = oldVal
+      }
+    }
+  },
+
+  methods: {
+    applyButtonHandler() {
+      let state = this.$store.state.gameEntity
+      let dimensions = {xDim: this.xDim, yDim: this.yDim, winSize: this.winSize}
+
+      if (!dimensionsAreValid(dimensions) || !dimensionsChanged(state, dimensions))
+        return
+
+      this.$emit('sizes-click', dimensions)
+    },
+
+    resetButtonHandler() {
+      if (this.$store.state.gameEntity.movesCount !== 0)
+        this.$emit('reset-click')
+    }
   }
 }
 </script>
@@ -74,6 +133,7 @@ export default {
   .game-btn {
     background: darkolivegreen;
     outline: none;
+    align-self: center;
   }
 
   .game-btn:active {
@@ -116,10 +176,6 @@ export default {
 
   input:invalid {
     border-color: red;
-  }
-
-  button {
-    align-self: center;
   }
 
   #apply-btn {
