@@ -79,7 +79,8 @@ export default {
 
       let {xDim, yDim, winSize} = dimensions
 
-      if (!validateDimensions(state, dimensions)) return
+      if (typeof(xDim) !== 'number' || typeof(yDim) !== 'number' || typeof(winSize) !== 'number'||
+          !validateDimensions(state, dimensions)) return
 
       this.$store.commit('gameEntity/changeSizes', dimensions)
       this.$children[0].drawAllCells()
@@ -90,7 +91,7 @@ export default {
 
 <style>
   #game-manager {
-    background: teal;
+    background: burlywood;
     width: 91%;
     padding-bottom: 130%;
     position: relative;

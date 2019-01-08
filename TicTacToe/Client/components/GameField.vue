@@ -3,7 +3,9 @@
   <canvas id="canvas" ref="canvas"
   @mousedown.prevent="$emit('mouse-down', getCellIndex($event))"
   @mouseup="$emit('mouse-up', getCellIndex($event))"
-  @mouseleave="$emit('mouse-leave')">
+  @mouseleave="$emit('mouse-leave')"
+  @touchstart.prevent="touchStartHandler($event)"
+  @touchend="touchEndHandler($event)">
   </canvas>
 </div>
 </template>
@@ -34,6 +36,8 @@ export default {
       clearImg: null,
       crossImg: null,
       noughtImg: null,
+
+      lastTouch: null
     }
   },
 
@@ -64,6 +68,32 @@ export default {
   },
 
   methods: { 
+    touchStartHandler(e) {
+      // deactivate prevoius mouse-down if more than one touch happens simultaneously
+      if (e.touches.length > 1) {
+        this.$emit('mouse-up', -1)
+      }
+
+      // handle new one
+      this.$emit('mouse-down', this.getCellIndex(e.touches[e.touches.length-1]))
+      this.lastTouch = e.touches[e.touches.length-1]
+    },
+
+    touchEndHandler(e) {
+      if (this.lastTouch === null) return
+
+      // check if lastTouch got removed from touches list (meaning that's the event that's handling lastTouch)
+      let removed = true
+      for (let i = 0; i < e.touches.length; i++) {
+        if (e.touches[i].identifier === this.lastTouch.identifier) removed = false
+      }
+
+      if (removed) {
+        this.$emit('mouse-up', this.getCellIndex(this.lastTouch))
+        this.lastTouch = null
+      }
+    },
+
     resizeHandler: function() {
       this.$refs['canvas'].width = this.$refs['canvas'].parentElement.clientWidth
       this.$refs['canvas'].height = this.$refs['canvas'].parentElement.clientHeight
@@ -156,7 +186,7 @@ export default {
 
 <style>
   #game-field {
-    background: sienna;
+    background: burlywood;
     width: 100%;
     height: 70%;
     position: absolute;

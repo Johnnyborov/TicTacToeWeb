@@ -1,22 +1,22 @@
 <template>
 <div id="game-info">
-  <h5>{{this.gameStatus}}</h5>
-  <div id="game-sizes">
+  <h5 id="game-status">{{this.gameStatus}}</h5>
+  <div id="game-dims">
     <div>
       <label>x-dim:</label>
-      <input v-model.number="dimensions.xDim" type="number" :min="limits.minXDim" :max="limits.maxXDim">
+      <input v-model.number="dimensions.xDim" type="number" :min="limits.minXDim" :max="limits.maxXDim" required>
     </div>
     <div>
       <label>y-dim:</label>
-      <input v-model.number="dimensions.yDim" type="number" :min="limits.minYDim" :max="limits.maxYDim"/>
+      <input v-model.number="dimensions.yDim" type="number" :min="limits.minYDim" :max="limits.maxYDim" required/>
     </div>
     <div>
       <label>win-size:</label>
-      <input v-model.number="dimensions.winSize" type="number" :min="limits.minWinSize" :max="limits.maxWinSize"/>
+      <input v-model.number="dimensions.winSize" type="number" :min="limits.minWinSize" :max="limits.maxWinSize" required/>
     </div>
-    <button @click="$emit('sizes-click', dimensions)">Apply</button>
+    <button id="apply-btn" class="game-btn" @click="$emit('sizes-click', dimensions)">Apply</button>
   </div>
-  <button @click="$emit('reset-click')">Reset</button>
+  <button id="reset-btn" class="game-btn" @click="$emit('reset-click')">Reset</button>
 </div>
 </template>
 
@@ -71,10 +71,19 @@ export default {
 </script>
 
 <style>
+  .game-btn {
+    background: darkolivegreen;
+    outline: none;
+  }
+
+  .game-btn:active {
+    background: green;
+  }
+
   #game-info {
     font-family: Verdana;
     color: forestgreen;
-    background: gold;
+    background: burlywood;
 
     display: flex;
     flex-direction: column;
@@ -86,21 +95,35 @@ export default {
     top: 70%;
   }
 
-  #game-sizes {
+  #game-dims {
     display: flex;
     flex-direction: row;
   }
 
-  #game-sizes > div {
+  #game-dims > div {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
+    margin: 0 0 5% 0;
   }
 
   input {
     box-sizing: border-box;
     width: 75%;
     margin: 0 5% 0 0;
+    border-color: green;
+  }
+
+  input:invalid {
+    border-color: red;
+  }
+
+  button {
+    align-self: center;
+  }
+
+  #apply-btn {
+    margin: 0 0 5% 0;
   }
 
   @media (orientation: landscape) {
@@ -111,8 +134,12 @@ export default {
       left: 70%;
     }
 
-    #game-sizes {
+    #game-dims {
       flex-direction: column;
+    }
+
+    #game-status {
+      padding: 0 0 0 10%;
     }
 
     label {
@@ -122,6 +149,14 @@ export default {
     input {
       width: 25%;
       margin: 0 10% 0 0;
+    }
+
+    #apply-btn {
+      margin: 10% 0 0 0;
+    }
+
+    #reset-btn {
+      margin: 0 0 15% 0;
     }
   }
 </style>

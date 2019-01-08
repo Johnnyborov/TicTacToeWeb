@@ -27,7 +27,7 @@ export default {
 
 <style>
   #app {
-    background: slategray;
+    background: burlywood;
     font-family: Verdana;
     color: navy;
     display: flex;
@@ -35,14 +35,14 @@ export default {
   }
 
   #game-row {
-    background:mediumslateblue;
+    background:burlywood;
     display: flex;
     flex-direction: row;
     flex: 0 0 88vmin;
   }
 
   #game-column {
-    background: maroon;
+    background: burlywood;
     flex: 0 0 66vmin;
   }
 
@@ -62,6 +62,7 @@ export default {
 
   h5 {
     font-size: 3vmin;
+    height: 2em;
   }
 
   button {
