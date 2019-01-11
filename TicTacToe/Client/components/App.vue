@@ -1,7 +1,6 @@
 ﻿<template>
 <div id="app">
   <h3>{{this.message}}</h3>
-  <game-hub></game-hub>
   <div id="game-row">
     <div id="game-column">
       <game-manager></game-manager>
@@ -12,12 +11,10 @@
 
 <script>
 import GameManager from './GameManager.vue'
-import GameHub from './GameHub.vue'
 
 export default {
   components: {
-    'game-manager': GameManager,
-    'game-hub': GameHub
+    'game-manager': GameManager
   },
 
   data() {

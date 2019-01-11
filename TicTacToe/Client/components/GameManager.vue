@@ -1,35 +1,61 @@
 <template>
   <div id="game-manager">
-    <game-field @cell-clicked="cellClicked"></game-field>
-    <game-info @reset-click="resetGame" @sizes-click="changeSizes"></game-info>
+    <game-hub v-if="lookingForGame" @game-created="createGameHandler"></game-hub>
+    <template v-else>
+      <game-field @cell-clicked="cellClickedHandler" :cellIcons="resources.cellIcons"></game-field>
+      <game-info @reset-click="resetGameHandler" @sizes-click="changeSizesHandler"></game-info>
+    </template>
   </div>
 </template>
 
 <script>
+import GameHub from './GameHub.vue'
 import GameField from './GameField.vue'
 import GameInfo from './GameInfo.vue'
 
+import Resources from '../resources/resources.js'
+
 export default {
   components: {
+    'game-hub': GameHub,
     'game-field': GameField,
     'game-info': GameInfo
   },
 
+  data() {
+    return {
+      lookingForGame: true,
+
+      resources: {
+        cellIcons: null
+      }
+    }
+  },
+
   mounted() {
+    this.resources.cellIcons = Resources.getCellIcons()
+
     this.$store.commit('gameEntity/newGame')
   },
 
   methods: {
-    cellClicked(index) {
+    cellClickedHandler(index) {
       this.$store.commit('gameEntity/makeMove', index)
     },
 
-    resetGame() {
+    resetGameHandler() {
       this.$store.commit('gameEntity/newGame')
     },
 
-    changeSizes(dimensions) {
+    changeSizesHandler(dimensions) {
       this.$store.commit('gameEntity/changeSizes', dimensions)
+    },
+
+    createGameHandler() {
+      this.lookingForGame = false
+
+      this.$store.commit('gameEntity/newGame')
+      //setTimeout(()=>{this.lookingForGame = true}, 5000)
     }
   }
 }

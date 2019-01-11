@@ -11,8 +11,6 @@
 </template>
 
 <script>
-import Resources from '../resources/resources.js'
-
 function getCellIndex(event, context, state) {
   let {xDim,yDim,cellBorderWidth,imgSize,imgStep} = getSizeAttributes(context, state)
 
@@ -86,17 +84,18 @@ function setCanvasSizes(canvas) {
 }
 
 export default {
+  props: {
+    cellIcons: {
+      type: Object,
+      default: null
+    }
+  },
+
   data() {
     return {
       context: null,
 
-      usubscribeMutations: null,
-
-      cellIcons: {
-        clearImg: null,
-        crossImg: null,
-        noughtImg: null
-      },
+      unsubscribeMutations: null,
       
       lastPressedCellIndex: -1,
       lastTouch: null
@@ -121,9 +120,8 @@ export default {
 
   created() {
     window.addEventListener("resize", this.resizeHandler)
-    window.addEventListener('load', this.loadedHandler)
 
-    this.usubscribeMutations = this.$store.subscribe((mutation,state) => {
+    this.unsubscribeMutations = this.$store.subscribe((mutation,state) => {
       switch(mutation.type) {
         case 'gameEntity/makeMove':
           this.drawCell(mutation.payload, 'normal') // payload is cellIndex
@@ -137,26 +135,21 @@ export default {
   },
   
   destroyed() {
-    this.usubscribeMutations()
+    this.unsubscribeMutations()
 
     window.removeEventListener("resize", this.resizeHandler)
-    window.removeEventListener('load', this.loadedHandler)
   },
 
   mounted() {
     setCanvasSizes(this.$refs['canvas'])
     this.context = this.$refs['canvas'].getContext('2d')
-    this.cellIcons = Resources.getCellIcons()
+
+    this.drawAllCells()
   },
 
   methods: { 
     resizeHandler() {
       setCanvasSizes(this.$refs['canvas'])
-      this.drawAllCells()
-    },
-
-    // waiting for images to load before first draw
-    loadedHandler() {
       this.drawAllCells()
     },
 
