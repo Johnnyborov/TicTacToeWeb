@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -6,15 +7,43 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace TicTacToe.GameHub
 {
+  public class Game
+  {
+    internal int MovesCount { get; set; }
+    internal string CrossesId { get; set; }
+    internal string NoughtsId { get; set; }
+  }
+
   public class Player
   {
-    public List<string> InvitedPlayersIds { get; set; } = new List<string>();
+    internal List<string> InvitedPlayersIds { get; set; } = new List<string>();
+    internal Game Game { get; set; }
   }
 
   public class GameHub : Hub
   {
-    public static Dictionary<string,Player> AvaliablePlayers = new Dictionary<string, Player>();
     public static object _lock = new object();
+    public static Dictionary<string, Player> AvaliablePlayers = new Dictionary<string, Player>();
+    public static Dictionary<string, Player> PlayingPlayers = new Dictionary<string, Player>();
+
+
+    public async Task SendMove(int index)
+    {
+      var game = PlayingPlayers[Context.ConnectionId].Game;
+      game.MovesCount++;
+
+      string oponentId = "";
+      if (game.MovesCount % 2 == 0)
+      {
+        oponentId = game.CrossesId;
+      }
+      else
+      {
+        oponentId = game.NoughtsId;
+      }
+
+      await Clients.Client(oponentId).SendAsync("MoveRecieved", index);
+    }
 
     public async Task SendInvite(string inviteeId)
     {
@@ -50,9 +79,15 @@ namespace TicTacToe.GameHub
       {
         if (AvaliablePlayers.ContainsKey(inviterId) && AvaliablePlayers[inviterId].InvitedPlayersIds.Contains(inviteeId))
         {
-          // maybe reuse these player variables later in game description
-          //AvaliablePlayers[inviterId].InvitedPlayersIds.Clear();
-          //AvaliablePlayers[inviteeId].InvitedPlayersIds.Clear();
+          AvaliablePlayers[inviterId].InvitedPlayersIds.Clear();
+          AvaliablePlayers[inviteeId].InvitedPlayersIds.Clear();
+
+          var game = new Game { CrossesId = inviterId, NoughtsId = inviteeId };
+          AvaliablePlayers[inviterId].Game = game;
+          AvaliablePlayers[inviteeId].Game = game;
+
+          PlayingPlayers.Add(inviterId, AvaliablePlayers[inviterId]);
+          PlayingPlayers.Add(inviteeId, AvaliablePlayers[inviteeId]);
 
           AvaliablePlayers.Remove(inviterId);
           AvaliablePlayers.Remove(inviteeId);
@@ -63,11 +98,17 @@ namespace TicTacToe.GameHub
 
       if (removed)
       {
-        // createGame(inviterId,inviteeId);
+        await Groups.RemoveFromGroupAsync(inviterId, "AvaliablePlayers");
+        await Groups.RemoveFromGroupAsync(inviteeId, "AvaliablePlayers");
 
-        await Clients.Clients(inviterId, inviteeId).SendAsync("GameCreated");
+        await Clients.Group("AvaliablePlayers").SendAsync("InviteRemoved", inviterId);
+        await Clients.Group("AvaliablePlayers").SendAsync("InviteRemoved", inviteeId);
+        
+        await Clients.Group("AvaliablePlayers").SendAsync("AvaliablePlayersUpdtated", AvaliablePlayers.ToArray());
 
-        await Clients.All.SendAsync("AvaliablePlayersUpdtated", AvaliablePlayers.ToArray());
+
+        await Clients.Clients(inviterId, inviteeId).SendAsync("GameCreated", inviterId);
+
 
         await Clients.All.SendAsync("NotificationRecieved", $"{inviterId} 's invite was accepted by {inviteeId}");
       }
@@ -80,9 +121,12 @@ namespace TicTacToe.GameHub
         AvaliablePlayers.Add(Context.ConnectionId, new Player());
       }
 
-      await Clients.Caller.SendAsync("OnConnected", Context.ConnectionId);
+      await Groups.AddToGroupAsync(Context.ConnectionId, "AvaliablePlayers");
 
-      await Clients.All.SendAsync("AvaliablePlayersUpdtated", AvaliablePlayers.ToArray());
+
+      await Clients.Caller.SendAsync("OnConnected", Context.ConnectionId);
+      await Clients.Group("AvaliablePlayers").SendAsync("AvaliablePlayersUpdtated", AvaliablePlayers.ToArray());
+
       await Clients.All.SendAsync("NotificationRecieved", $"{Context.ConnectionId} connected");
 
       await base.OnConnectedAsync();
@@ -95,7 +139,11 @@ namespace TicTacToe.GameHub
         AvaliablePlayers.Remove(Context.ConnectionId);
       }
 
-      await Clients.All.SendAsync("AvaliablePlayersUpdtated", AvaliablePlayers.ToArray());
+      await Groups.AddToGroupAsync(Context.ConnectionId, "AvaliablePlayers");
+
+
+      await Clients.Group("AvaliablePlayers").SendAsync("AvaliablePlayersUpdtated", AvaliablePlayers.ToArray());
+
       await Clients.All.SendAsync("NotificationRecieved", $"{Context.ConnectionId} disconnected");
 
       await base.OnDisconnectedAsync(exception);

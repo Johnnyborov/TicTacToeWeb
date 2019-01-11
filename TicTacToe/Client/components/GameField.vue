@@ -88,6 +88,11 @@ export default {
     cellIcons: {
       type: Object,
       default: null
+    },
+
+    isMyTurn: {
+      type: Boolean,
+      default: false
     }
   },
 
@@ -154,20 +159,28 @@ export default {
     },
 
     mouseDownHandler(event) {
+      if (!this.isMyTurn) return
+
       let index = getCellIndex(event, this.context, this.$store.state.gameEntity)
       this.cellMouseDown(index)
     },
 
     mouseUpHandler(event) {
+      if (!this.isMyTurn) return
+
       let index = getCellIndex(event, this.context, this.$store.state.gameEntity)
       this.cellMouseUp(index)
     },
 
     mouseLeaveHandler() {
+      if (!this.isMyTurn) return
+
       this.cellMouseUp(-1)
     },
 
     touchStartHandler(e) {
+      if (!this.isMyTurn) return
+
       // deactivate prevoius mouse-down if more than one touch happens simultaneously
       if (e.touches.length > 1) {
         this.cellMouseUp(-1)
@@ -179,6 +192,8 @@ export default {
     },
 
     touchEndHandler(e) {
+      if (!this.isMyTurn) return
+
       if (this.lastTouch === null) return
 
       // check if lastTouch got removed from touches list (meaning that's the event that's handling lastTouch)
@@ -195,8 +210,7 @@ export default {
 
 
     cellMouseDown(index) {
-      if (index > -1 && !this.state.gameOver && this.state.cells[index] === 'clear'
-      ) {
+      if (index > -1 && !this.state.gameOver && this.state.cells[index] === 'clear') {
         // set pressed cell look
         this.lastPressedCellIndex = index
         this.drawCell(index, 'pressed')

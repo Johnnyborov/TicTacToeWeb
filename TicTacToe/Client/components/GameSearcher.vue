@@ -1,5 +1,5 @@
 <template>
-  <div id="game-hub">
+  <div id="game-searcher">
     <div>
       <p>Connected Players Ids:</p>
       <button @click="inviteButtonHandler">Invite</button>
@@ -31,12 +31,16 @@
 </template>
 
 <script>
-import * as SignalR from '@aspnet/signalr'
-
 export default {
+  props: {
+    hubConnection: {
+      type: Object,
+      default: null
+    }
+  },
+
   data() {
     return {
-      hubConnection: null,
       myId: null,
 
       notificationsMessages: [],
@@ -56,20 +60,9 @@ export default {
     }
   },
 
-  mounted() {
-    this.hubConnection = new SignalR.HubConnectionBuilder()
-      .withUrl('http://localhost:45353/game')
-      .configureLogging(SignalR.LogLevel.Information)
-      .build()
-
-    this.hubConnection.serverTimeoutInMilliseconds = 12 * 1000
-
+  created() {
     this.hubConnection.on('OnConnected', id => {
       this.myId = id
-    })
-
-    this.hubConnection.on('GameCreated', () => {
-      this.$emit('game-created')
     })
 
     this.hubConnection.on('AvaliablePlayersUpdtated', players => {
@@ -84,7 +77,15 @@ export default {
       this.invitesOpenentsIds.push(id)
     })
 
-    this.hubConnection.start()
+    this.hubConnection.on('InviteRemoved', (id) => {
+      let index = this.invitesOpenentsIds.indexOf(id)
+      if (index !== -1)
+        this.invitesOpenentsIds.splice(index,1)
+    })
+
+    this.hubConnection.on('GameCreated', id => {
+      this.$emit('game-created', id === this.myId)
+    })
   },
 
   methods: {
@@ -108,13 +109,13 @@ export default {
 
     inviteButtonHandler() {
       if (this.avaliablePlayers.find(player=>player.key === this.selectedPlayerId)) {
-        this.hubConnection.invoke("SendInvite", this.selectedPlayerId)
+        this.hubConnection.invoke('SendInvite', this.selectedPlayerId)
       }
     },
 
     acceptButtonHandler() {
       if (this.invitesOpenentsIds.includes(this.selectedInviteOponentId)) {
-        this.hubConnection.invoke("SendAccept", this.selectedInviteOponentId)
+        this.hubConnection.invoke('SendAccept', this.selectedInviteOponentId)
       }
     }
   }
@@ -122,14 +123,14 @@ export default {
 </script>
 
 <style>
-  #game-hub {
+  #game-searcher {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
   }
 
   .narrow {
-    width: 30%;
+    width: 25%;
   }
 
   .selected {

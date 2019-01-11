@@ -17,7 +17,7 @@ function setCellNewType(state, index) {
   state.movesCount++
 }
 
-function finishGame(state, conditions) {
+function _finishGame(state, conditions) {
   if (conditions.direction !== 'draw' && state.movesCount%2 == 1) {
     state.winner = 'crosses'
   }
@@ -95,7 +95,11 @@ export default {
       setCellNewType(state, index)
 
       let {over, direction} = GameChecker.checkGame(state)
-      if (over) finishGame(state, direction)
+      if (over) _finishGame(state, direction)
+    },
+
+    finishGame(state, {direction}) {
+      _finishGame(state, direction)
     }
   }
 }
