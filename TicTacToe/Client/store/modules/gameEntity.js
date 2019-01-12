@@ -1,6 +1,7 @@
 import GameChecker from './gameEntityGameChecker.js'
 
 function _newGame(state) {
+  state.winByForfeit = false
   state.gameOver = false
   state.movesCount = 0
   state.winner = ''
@@ -18,19 +19,14 @@ function setCellNewType(state, index) {
 }
 
 function _finishGame(state, conditions) {
-  if (conditions.direction !== 'draw' && state.movesCount%2 == 1) {
-    state.winner = 'crosses'
-  }
-  else if (conditions.direction !== 'draw' && state.movesCount%2 == 0) {
-    state.winner = 'noughts'
-  }
-  else {
-    state.winner = 'draw'
-  }
+  state.winner = conditions.winner
 
   state.gameOver = true
 
   setWinChainIndexes(state, conditions)
+
+  if (conditions.direction === 'forfeit')
+    state.winByForfeit = true
 }
 
 // winSize cells in one of 4 directions starting from cell (i,j)
@@ -68,6 +64,7 @@ export default {
   namespaced: true,
   
   state: {
+    winByForfeit: false,
     gameOver: false,
     movesCount: 0,
     winner: '',
@@ -79,11 +76,7 @@ export default {
   },
 
   mutations: {
-    newGame(state) {
-      _newGame(state)
-    },
-
-    changeSizes(state, {xDim, yDim, winSize}) {
+    newGame(state, {xDim, yDim, winSize}) {
       state.xDim = xDim
       state.yDim = yDim
       state.winSize = winSize

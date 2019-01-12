@@ -10,7 +10,7 @@
       </ul>
     </div>
     <div>
-      <p>Invites Openents Ids:</p>
+      <p>Invites Oponents Ids:</p>
       <div id="invites-buttons">
         <button class="small-btn" @click="acceptButtonHandler">Accept</button>
         <button class="small-btn" @click="declineButtonHandler">Decline</button>

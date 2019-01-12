@@ -16,6 +16,7 @@ namespace TicTacToe.GameHub
 
   public struct Conditions
   {
+    public string winner;
     public string direction;
     public int i;
     public int j;
@@ -25,6 +26,8 @@ namespace TicTacToe.GameHub
   {
     private int MovesCount { get; set; } = 0;
     private bool GameOver { get; set; } = false;
+
+    private string Winner = "";
 
     internal Dimensions GameDimensions { get; set; }
     private Conditions GameOverConditions { get; set; }
@@ -37,9 +40,12 @@ namespace TicTacToe.GameHub
     {
       MovesCount++;
 
-      if (MovesCount > 3) GameOver = true;
-
-      GameOverConditions = new Conditions{ direction = "right", i = 0, j = 0};
+      if (MovesCount > 3)
+      {
+        Winner = "draw";
+        GameOver = true;
+        GameOverConditions = new Conditions { winner = Winner, direction = "draw", i = -1, j = -1 };
+      }
     }
 
     internal string GetNextMovePlayerId()
@@ -63,6 +69,28 @@ namespace TicTacToe.GameHub
     {
       return GameOverConditions;
     }
+
+    internal bool FinishGame(string looserId)
+    {
+      if (!GameOver)
+      {
+        if (looserId == CrossesId)
+        {
+          Winner = "noughts";
+        }
+        else
+        {
+          Winner = "crosses";
+        }
+
+        GameOver = true;
+        GameOverConditions = new Conditions { winner = Winner, direction = "forfeit", i = -1, j = -1 };
+
+        return true;
+      }
+
+      return false;
+    }
   }
 
   public class Player
@@ -75,8 +103,7 @@ namespace TicTacToe.GameHub
   {
     public static object _lock = new object();
     public static Dictionary<string, Player> AvaliablePlayers = new Dictionary<string, Player>();
-    public static Dictionary<string, Player> PlayingPlayers = new Dictionary<string, Player>();
-
+    private static Dictionary<string, Player> PlayingPlayers = new Dictionary<string, Player>();
 
     public async Task SendMove(int index)
     {
@@ -147,7 +174,8 @@ namespace TicTacToe.GameHub
 
       lock (_lock)
       {
-        if (AvaliablePlayers.ContainsKey(inviterId) && AvaliablePlayers[inviterId].InvitedPlayersIds.ContainsKey(inviteeId))
+        if (AvaliablePlayers.ContainsKey(inviterId) && AvaliablePlayers.ContainsKey(inviteeId) &&
+            AvaliablePlayers[inviterId].InvitedPlayersIds.ContainsKey(inviteeId))
         {
           var dims = AvaliablePlayers[inviterId].InvitedPlayersIds[inviteeId];
           game = new Game { CrossesId = inviterId, NoughtsId = inviteeId, GameDimensions = dims };
@@ -180,6 +208,40 @@ namespace TicTacToe.GameHub
       }
     }
 
+    public async Task ResumeSearching()
+    {
+      var currId = Context.ConnectionId;
+
+      Game game = null;
+
+      lock (_lock)
+      {
+        if (PlayingPlayers.ContainsKey(currId))
+        {
+          game = PlayingPlayers[currId].Game;
+          PlayingPlayers.Remove(currId);
+        }
+
+        AvaliablePlayers.Add(currId, new Player());
+      }
+
+      if (game != null)
+      {
+        bool forcedGameOver = game.FinishGame(currId);
+        if (forcedGameOver)
+        {
+          var conditions = game.GetGameOverConditions();
+          if (conditions.winner == "crosses")
+            await Clients.Client(game.CrossesId).SendAsync("GameEnded", conditions);
+          else
+            await Clients.Client(game.NoughtsId).SendAsync("GameEnded", conditions);
+        }
+      }
+
+      await Groups.AddToGroupAsync(currId, "AvaliablePlayers");
+      await Clients.Group("AvaliablePlayers").SendAsync("AvaliablePlayersUpdtated", AvaliablePlayers.ToArray());
+    }
+
     public override async Task OnConnectedAsync()
     {
       lock(_lock)
@@ -199,15 +261,38 @@ namespace TicTacToe.GameHub
 
     public override async Task OnDisconnectedAsync(Exception exception)
     {
+      var currId = Context.ConnectionId;
+
+      Game game = null;
+
       lock (_lock)
       {
-        AvaliablePlayers.Remove(Context.ConnectionId);
+        if (PlayingPlayers.ContainsKey(currId))
+        {
+          game = PlayingPlayers[currId].Game;
+          PlayingPlayers.Remove(currId);
+        }
+
+        AvaliablePlayers.Remove(currId);
       }
 
-      await Groups.RemoveFromGroupAsync(Context.ConnectionId, "AvaliablePlayers");
+      if (game != null)
+      {
+        bool forcedGameOver = game.FinishGame(currId);
+        if (forcedGameOver)
+        {
+          var conditions = game.GetGameOverConditions();
+          if (conditions.winner == "crosses")
+            await Clients.Client(game.CrossesId).SendAsync("GameEnded", conditions);
+          else
+            await Clients.Client(game.NoughtsId).SendAsync("GameEnded", conditions);
+        }
+      }
 
 
-      await Clients.Group("AvaliablePlayers").SendAsync("InviteRemoved", Context.ConnectionId);
+      await Groups.RemoveFromGroupAsync(currId, "AvaliablePlayers");
+
+      await Clients.Group("AvaliablePlayers").SendAsync("InviteRemoved", currId);
       await Clients.Group("AvaliablePlayers").SendAsync("AvaliablePlayersUpdtated", AvaliablePlayers.ToArray());
 
 

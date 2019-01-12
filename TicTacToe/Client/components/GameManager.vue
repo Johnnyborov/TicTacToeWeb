@@ -4,7 +4,7 @@
       :myPreferredDimensions="myPreferredDimensions"></game-searcher>
     <game-field v-else @cell-clicked="cellClickedHandler" :cellIcons="resources.cellIcons" :isMyTurn="isMyTurn"></game-field>
 
-    <game-info @exit-click="exitGameHandler" @sizes-click="changeSizesHandler" :isMyTurn="isMyTurn"
+    <game-info @exit-click="exitGameHandler" @sizes-click="changeSizesHandler" :isMyTurn="isMyTurn" :mySide="mySide"
       :lookingForGame="lookingForGame" :myPreferredDimensions="myPreferredDimensions"></game-info>
   </div>
 </template>
@@ -38,6 +38,7 @@ export default {
         winSize: this.$store.state.gameEntity.winSize,
       },
       isMyTurn: false,
+      mySide: '',
 
       resources: {
         cellIcons: null
@@ -86,6 +87,8 @@ export default {
 
     exitGameHandler() {
       this.lookingForGame = true
+
+      this.hubConnection.invoke('ResumeSearching')
     },
 
     changeSizesHandler(dimensions) {
@@ -94,9 +97,15 @@ export default {
 
     createGame(isMyTurn, dimensions) {
       this.lookingForGame = false
+      
+      if (isMyTurn)
+        this.mySide = 'crosses'
+      else
+        this.mySide = 'noughts'
 
       this.isMyTurn = isMyTurn
-      this.$store.commit('gameEntity/changeSizes', dimensions)
+
+      this.$store.commit('gameEntity/newGame', dimensions)
     }
   }
 }

@@ -1,8 +1,8 @@
 <template>
 <div id="game-info">
-  <h5 id="game-status">{{this.gameStatus}}</h5>
+  <h5 class="margin-bottom" id="game-status">{{this.gameStatus}}</h5>
+  <p>Preferred Dimensions:</p>
   <div id="game-dims">
-    <p>Preferred Dimensions:</p>
     <div>
       <label>x-dim:</label>
       <input v-model.trim.number="xDim" type="number"
@@ -18,10 +18,13 @@
       <input v-model.trim.number="winSize" type="number"
             :min="limits.minWinSize" :max="limits.maxWinSize" required/>
     </div>
-    <button id="apply-btn" class="game-btn" @click="applyButtonHandler">Apply</button>
+    <button :disabled="!lookingForGame" id="apply-btn" class="game-btn" @click="applyButtonHandler">Apply</button>
   </div>
-  <p>My Current Dimensions: x:{{myPreferredDimensions.xDim}} y:{{myPreferredDimensions.yDim}} w:{{myPreferredDimensions.winSize}}</p>
-  <button :disabled="lookingForGame" id="exit-btn" class="game-btn" @click="exitButtonHandler">Exit Game</button>
+  <div id="curr-dims">
+    <p class="margin-bottom">My Current Preferred Dimensions: </p>
+    <p>{{myPreferredDimensions.xDim}} y:{{myPreferredDimensions.yDim}} w:{{myPreferredDimensions.winSize}}</p>
+  </div>
+  <button :disabled="lookingForGame" id="exit-btn" class="game-btn" @click="$emit('exit-click')">Exit Game</button>
 </div>
 </template>
 
@@ -58,6 +61,11 @@ export default {
       default: true
     },
 
+    mySide: {
+      type: String,
+      default: ''
+    },
+
     myPreferredDimensions: {
       type: Object,
       default: null
@@ -88,24 +96,37 @@ export default {
       
       if (this.lookingForGame) {
         result = "Search games"
-      } else {
+      }
+      else
+      {
         if (this.$store.state.gameEntity.gameOver) {
           switch(this.$store.state.gameEntity.winner) {
             case 'crosses':
-              result = 'Crosses won'
+              if (this.mySide === 'crosses')
+                result = 'You won'
+              else
+                result = 'You lost'
               break
             case 'noughts':
-              result = 'Noughts won'
+              if (this.mySide === 'noughts')
+                result = 'You won'
+              else
+                result = 'You lost'
               break
             case 'draw':
               result = 'Draw'
               break      
           }
-        } else {
+
+          if (this.$store.state.gameEntity.winByForfeit)
+            result += ': Oponent left the game'
+        }
+        else
+        {
           if (this.isMyTurn)
             result = 'Your turn'
           else
-            result = "Openent's turn"
+            result = "Oponent's turn"
         }
       }
       
@@ -146,11 +167,6 @@ export default {
         return
 
       this.$emit('sizes-click', dimensions)
-    },
-
-    exitButtonHandler() {
-      if (this.$store.state.gameEntity.movesCount !== 0)
-        this.$emit('exit-click')
     }
   }
 }
@@ -209,6 +225,15 @@ export default {
     margin: 0 0 5% 0;
   }
 
+  #curr-dims {
+    display: flex;
+    flex-direction: row;
+  }
+
+  .margin-bottom {
+    margin: 0 0 5% 0;
+  }
+
   @media (orientation: landscape) {
     #game-info {
       width: 30%;
@@ -233,7 +258,6 @@ export default {
       padding: 0 0 0 10%;
     }
 
-
     input {
       width: 25%;
       margin: 0 10% 0 0;
@@ -244,6 +268,14 @@ export default {
     }
 
     #exit-btn {
+      margin: 0 0 15% 0;
+    }
+
+    #curr-dims {
+      flex-direction: column;
+    }
+
+    .margin-bottom {
       margin: 0 0 15% 0;
     }
   }

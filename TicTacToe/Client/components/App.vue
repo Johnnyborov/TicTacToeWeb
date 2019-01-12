@@ -61,7 +61,7 @@ export default {
   }
 
   h5 {
-    font-size: 3vmin;
+    font-size: 2vmin;
     height: 2em;
   }
 
