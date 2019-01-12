@@ -68,9 +68,9 @@ export default {
     gameOver: false,
     movesCount: 0,
     winner: '',
-    xDim: 25,
-    yDim: 25,
-    winSize: 5,
+    xDim: 10,
+    yDim: 10,
+    winSize: 4,
     winChainIndexes: [],
     cells: []
   },

@@ -17,6 +17,7 @@ import GameInfo from './GameInfo.vue'
 import Resources from '../resources/resources.js'
 import * as SignalR from '@aspnet/signalr'
 
+const debug = process.env.NODE_ENV !== 'production'
 
 export default {
   components: {
@@ -49,8 +50,12 @@ export default {
   created() {
     this.resources.cellIcons = Resources.getCellIcons()
 
+    let url = '/game'
+    if (debug)
+      url = 'http://localhost:45353/game'
+
     this.hubConnection = new SignalR.HubConnectionBuilder()
-      .withUrl('http://localhost:45353/game')
+      .withUrl(url)
       .configureLogging(SignalR.LogLevel.Information)
       .build()
 

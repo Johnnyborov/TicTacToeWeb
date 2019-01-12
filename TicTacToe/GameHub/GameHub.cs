@@ -7,92 +7,6 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace TicTacToe.GameHub
 {
-  public struct Dimensions
-  {
-    public int xDim;
-    public int yDim;
-    public int winSize;
-  }
-
-  public struct Conditions
-  {
-    public string winner;
-    public string direction;
-    public int i;
-    public int j;
-  }
-
-  public class Game
-  {
-    private int MovesCount { get; set; } = 0;
-    private bool GameOver { get; set; } = false;
-
-    private string Winner = "";
-
-    internal Dimensions GameDimensions { get; set; }
-    private Conditions GameOverConditions { get; set; }
-
-
-    internal string CrossesId { get; set; }
-    internal string NoughtsId { get; set; }
-
-    internal void MakeMove()
-    {
-      MovesCount++;
-
-      if (MovesCount > 3)
-      {
-        Winner = "draw";
-        GameOver = true;
-        GameOverConditions = new Conditions { winner = Winner, direction = "draw", i = -1, j = -1 };
-      }
-    }
-
-    internal string GetNextMovePlayerId()
-    {
-      if (MovesCount % 2 == 0)
-      {
-        return CrossesId;
-      }
-      else
-      {
-        return NoughtsId;
-      }
-    }
-
-    internal bool IsGameOver()
-    {
-      return GameOver;
-    }
-
-    internal Conditions GetGameOverConditions()
-    {
-      return GameOverConditions;
-    }
-
-    internal bool FinishGame(string looserId)
-    {
-      if (!GameOver)
-      {
-        if (looserId == CrossesId)
-        {
-          Winner = "noughts";
-        }
-        else
-        {
-          Winner = "crosses";
-        }
-
-        GameOver = true;
-        GameOverConditions = new Conditions { winner = Winner, direction = "forfeit", i = -1, j = -1 };
-
-        return true;
-      }
-
-      return false;
-    }
-  }
-
   public class Player
   {
     internal Dictionary<string, Dimensions> InvitedPlayersIds { get; set; } = new Dictionary<string, Dimensions>();
@@ -107,20 +21,24 @@ namespace TicTacToe.GameHub
 
     public async Task SendMove(int index)
     {
-      // check senders id if it's really his turn
-
       var game = PlayingPlayers[Context.ConnectionId].Game;
-      game.MakeMove();
 
+      // check senders id if it's really his turn
+      string currentMovePlayerId = game.GetNextMovePlayerId();
+      if (Context.ConnectionId != currentMovePlayerId)
+        return;
+
+      bool wasValidMove = game.TryMakeMove(index);
+
+      if (!wasValidMove)
+        return;
+
+      await Clients.Client(game.GetNextMovePlayerId()).SendAsync("MoveRecieved", index);
 
       if (game.IsGameOver())
       {
         await Clients.Client(Context.ConnectionId).SendAsync("GameEnded", game.GetGameOverConditions());
         await Clients.Client(game.GetNextMovePlayerId()).SendAsync("GameEnded", game.GetGameOverConditions());
-      }
-      else
-      {
-        await Clients.Client(game.GetNextMovePlayerId()).SendAsync("MoveRecieved", index);
       }
     }
 
@@ -178,7 +96,8 @@ namespace TicTacToe.GameHub
             AvaliablePlayers[inviterId].InvitedPlayersIds.ContainsKey(inviteeId))
         {
           var dims = AvaliablePlayers[inviterId].InvitedPlayersIds[inviteeId];
-          game = new Game { CrossesId = inviterId, NoughtsId = inviteeId, GameDimensions = dims };
+          game = new Game(inviterId, inviteeId, dims);
+
           AvaliablePlayers[inviterId].Game = game;
           AvaliablePlayers[inviteeId].Game = game;
 

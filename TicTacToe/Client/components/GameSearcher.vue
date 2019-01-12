@@ -58,6 +58,11 @@ export default {
   created() {
     this.hubConnection.on('AvaliablePlayersUpdtated', players => {
       this.avaliablePlayers = players.filter(player=>player.key !== this.myId)
+
+      // if connection hasn't started yet
+      if (this.myId == null) setTimeout(()=>{
+        this.avaliablePlayers = this.avaliablePlayers.filter(player=>player.key !== this.myId)
+      }, 300)
     })
 
     this.hubConnection.on('InviteRequested', (id, dimensions) => {

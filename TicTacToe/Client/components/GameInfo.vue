@@ -1,6 +1,6 @@
 <template>
 <div id="game-info">
-  <h5 class="margin-bottom" id="game-status">{{this.gameStatus}}</h5>
+  <h5 class="margin-bottom" id="game-status"><span v-html="this.gameStatus"></span></h5>
   <p>Preferred Dimensions:</p>
   <div id="game-dims">
     <div>
@@ -95,7 +95,7 @@ export default {
       let result = ''
       
       if (this.lookingForGame) {
-        result = "Search games"
+        result = "Search games."
       }
       else
       {
@@ -103,33 +103,32 @@ export default {
           switch(this.$store.state.gameEntity.winner) {
             case 'crosses':
               if (this.mySide === 'crosses')
-                result = 'You won'
+                result = 'You won!'
               else
-                result = 'You lost'
+                result = 'You lost!'
               break
             case 'noughts':
               if (this.mySide === 'noughts')
-                result = 'You won'
+                result = 'You won!'
               else
-                result = 'You lost'
+                result = 'You lost!'
               break
             case 'draw':
-              result = 'Draw'
+              result = 'Draw!'
               break      
           }
 
           if (this.$store.state.gameEntity.winByForfeit)
-            result += ': Oponent left the game'
+            result = 'Oponent left the game.<br/>' + result
         }
         else
         {
           if (this.isMyTurn)
-            result = 'Your turn'
+            result = '<i>My side: ' + this.mySide + '</i>.<br/>Your turn.'
           else
-            result = "Oponent's turn"
+            result = '<i>My side: ' + this.mySide + "</i>.<br/>Oponent's turn."
         }
       }
-      
 
       return result
     }
