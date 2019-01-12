@@ -7,16 +7,67 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace TicTacToe.GameHub
 {
+  public struct Dimensions
+  {
+    public int xDim;
+    public int yDim;
+    public int winSize;
+  }
+
+  public struct Conditions
+  {
+    public string direction;
+    public int i;
+    public int j;
+  }
+
   public class Game
   {
-    internal int MovesCount { get; set; }
+    private int MovesCount { get; set; } = 0;
+    private bool GameOver { get; set; } = false;
+
+    internal Dimensions GameDimensions { get; set; }
+    private Conditions GameOverConditions { get; set; }
+
+
     internal string CrossesId { get; set; }
     internal string NoughtsId { get; set; }
+
+    internal void MakeMove()
+    {
+      MovesCount++;
+
+      if (MovesCount > 3) GameOver = true;
+
+      GameOverConditions = new Conditions{ direction = "right", i = 0, j = 0};
+    }
+
+    internal string GetNextMovePlayerId()
+    {
+      if (MovesCount % 2 == 0)
+      {
+        return CrossesId;
+      }
+      else
+      {
+        return NoughtsId;
+      }
+    }
+
+    internal bool IsGameOver()
+    {
+      return GameOver;
+    }
+
+    internal Conditions GetGameOverConditions()
+    {
+      return GameOverConditions;
+    }
   }
 
   public class Player
   {
-    internal List<string> InvitedPlayersIds { get; set; } = new List<string>();
+    internal Dictionary<string, Dimensions> InvitedPlayersIds { get; set; } = new Dictionary<string, Dimensions>();
     internal Game Game { get; set; }
   }
 
@@ -29,23 +80,24 @@ namespace TicTacToe.GameHub
 
     public async Task SendMove(int index)
     {
-      var game = PlayingPlayers[Context.ConnectionId].Game;
-      game.MovesCount++;
+      // check senders id if it's really his turn
 
-      string oponentId = "";
-      if (game.MovesCount % 2 == 0)
+      var game = PlayingPlayers[Context.ConnectionId].Game;
+      game.MakeMove();
+
+
+      if (game.IsGameOver())
       {
-        oponentId = game.CrossesId;
+        await Clients.Client(Context.ConnectionId).SendAsync("GameEnded", game.GetGameOverConditions());
+        await Clients.Client(game.GetNextMovePlayerId()).SendAsync("GameEnded", game.GetGameOverConditions());
       }
       else
       {
-        oponentId = game.NoughtsId;
+        await Clients.Client(game.GetNextMovePlayerId()).SendAsync("MoveRecieved", index);
       }
-
-      await Clients.Client(oponentId).SendAsync("MoveRecieved", index);
     }
 
-    public async Task SendInvite(string inviteeId)
+    public async Task SendInvite(string inviteeId, Dimensions dimensions)
     {
       string inviterId = Context.ConnectionId;
 
@@ -54,19 +106,36 @@ namespace TicTacToe.GameHub
         bool added = false;
         lock (_lock)
         {
-          if (AvaliablePlayers.ContainsKey(inviterId) && !AvaliablePlayers[inviterId].InvitedPlayersIds.Contains(inviteeId))
+          if (AvaliablePlayers.ContainsKey(inviterId) && !AvaliablePlayers[inviterId].InvitedPlayersIds.ContainsKey(inviteeId))
           {
-            AvaliablePlayers[inviterId].InvitedPlayersIds.Add(inviteeId);
+            AvaliablePlayers[inviterId].InvitedPlayersIds.Add(inviteeId, dimensions);
             added = true;
           }
         }
 
         if (added)
         {
-          await Clients.Client(inviteeId).SendAsync("InviteRequested", inviterId);
-
-          await Clients.All.SendAsync("NotificationRecieved", $"{inviteeId} was invited by {inviterId}");
+          await Clients.Client(inviteeId).SendAsync("InviteRequested", inviterId, dimensions);
         }
+      }
+    }
+
+    public async Task SendDecline(string inviterId)
+    {
+      string inviteeId = Context.ConnectionId;
+
+      bool removed = false;
+      lock (_lock)
+      {
+        if (AvaliablePlayers.ContainsKey(inviterId))
+        {
+          removed = AvaliablePlayers[inviterId].InvitedPlayersIds.Remove(inviteeId);
+        }
+      }
+
+      if (removed)
+      {
+        await Clients.Client(inviteeId).SendAsync("InviteRemoved", inviterId);
       }
     }
 
@@ -74,29 +143,29 @@ namespace TicTacToe.GameHub
     {
       string inviteeId = Context.ConnectionId;
 
-      bool removed = false;
+      Game game = null;
+
       lock (_lock)
       {
-        if (AvaliablePlayers.ContainsKey(inviterId) && AvaliablePlayers[inviterId].InvitedPlayersIds.Contains(inviteeId))
+        if (AvaliablePlayers.ContainsKey(inviterId) && AvaliablePlayers[inviterId].InvitedPlayersIds.ContainsKey(inviteeId))
         {
-          AvaliablePlayers[inviterId].InvitedPlayersIds.Clear();
-          AvaliablePlayers[inviteeId].InvitedPlayersIds.Clear();
-
-          var game = new Game { CrossesId = inviterId, NoughtsId = inviteeId };
+          var dims = AvaliablePlayers[inviterId].InvitedPlayersIds[inviteeId];
+          game = new Game { CrossesId = inviterId, NoughtsId = inviteeId, GameDimensions = dims };
           AvaliablePlayers[inviterId].Game = game;
           AvaliablePlayers[inviteeId].Game = game;
+
+          AvaliablePlayers[inviterId].InvitedPlayersIds.Clear();
+          AvaliablePlayers[inviteeId].InvitedPlayersIds.Clear();
 
           PlayingPlayers.Add(inviterId, AvaliablePlayers[inviterId]);
           PlayingPlayers.Add(inviteeId, AvaliablePlayers[inviteeId]);
 
           AvaliablePlayers.Remove(inviterId);
           AvaliablePlayers.Remove(inviteeId);
-
-          removed = true;
         }
       }
 
-      if (removed)
+      if (game != null)
       {
         await Groups.RemoveFromGroupAsync(inviterId, "AvaliablePlayers");
         await Groups.RemoveFromGroupAsync(inviteeId, "AvaliablePlayers");
@@ -107,10 +176,7 @@ namespace TicTacToe.GameHub
         await Clients.Group("AvaliablePlayers").SendAsync("AvaliablePlayersUpdtated", AvaliablePlayers.ToArray());
 
 
-        await Clients.Clients(inviterId, inviteeId).SendAsync("GameCreated", inviterId);
-
-
-        await Clients.All.SendAsync("NotificationRecieved", $"{inviterId} 's invite was accepted by {inviteeId}");
+        await Clients.Clients(inviterId, inviteeId).SendAsync("GameCreated", inviterId, game.GameDimensions);
       }
     }
 
@@ -127,7 +193,6 @@ namespace TicTacToe.GameHub
       await Clients.Caller.SendAsync("OnConnected", Context.ConnectionId);
       await Clients.Group("AvaliablePlayers").SendAsync("AvaliablePlayersUpdtated", AvaliablePlayers.ToArray());
 
-      await Clients.All.SendAsync("NotificationRecieved", $"{Context.ConnectionId} connected");
 
       await base.OnConnectedAsync();
     }
@@ -139,12 +204,12 @@ namespace TicTacToe.GameHub
         AvaliablePlayers.Remove(Context.ConnectionId);
       }
 
-      await Groups.AddToGroupAsync(Context.ConnectionId, "AvaliablePlayers");
+      await Groups.RemoveFromGroupAsync(Context.ConnectionId, "AvaliablePlayers");
 
 
+      await Clients.Group("AvaliablePlayers").SendAsync("InviteRemoved", Context.ConnectionId);
       await Clients.Group("AvaliablePlayers").SendAsync("AvaliablePlayersUpdtated", AvaliablePlayers.ToArray());
 
-      await Clients.All.SendAsync("NotificationRecieved", $"{Context.ConnectionId} disconnected");
 
       await base.OnDisconnectedAsync(exception);
     }

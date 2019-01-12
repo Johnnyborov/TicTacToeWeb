@@ -2,6 +2,7 @@
 <div id="game-info">
   <h5 id="game-status">{{this.gameStatus}}</h5>
   <div id="game-dims">
+    <p>Preferred Dimensions:</p>
     <div>
       <label>x-dim:</label>
       <input v-model.trim.number="xDim" type="number"
@@ -19,7 +20,8 @@
     </div>
     <button id="apply-btn" class="game-btn" @click="applyButtonHandler">Apply</button>
   </div>
-  <button id="reset-btn" class="game-btn" @click="resetButtonHandler">Reset</button>
+  <p>My Current Dimensions: x:{{myPreferredDimensions.xDim}} y:{{myPreferredDimensions.yDim}} w:{{myPreferredDimensions.winSize}}</p>
+  <button :disabled="lookingForGame" id="exit-btn" class="game-btn" @click="exitButtonHandler">Exit Game</button>
 </div>
 </template>
 
@@ -45,6 +47,23 @@ function dimensionsChanged(state, {xDim, yDim, winSize}) {
 }
 
 export default {
+  props: {
+    lookingForGame: {
+      type: Boolean,
+      default: true
+    },
+
+    isMyTurn: {
+      type: Boolean,
+      default: true
+    },
+
+    myPreferredDimensions: {
+      type: Object,
+      default: null
+    }
+  },
+
   data() {
     return {
       xDim: this.$store.state.gameEntity.xDim,
@@ -67,21 +86,29 @@ export default {
     gameStatus() {
       let result = ''
       
-      if (this.$store.state.gameEntity.gameOver) {
-        switch(this.$store.state.gameEntity.winner) {
-          case 'crosses':
-            result = 'Crosses won'
-            break
-          case 'noughts':
-            result = 'Noughts won'
-            break
-          case 'draw':
-            result = 'Draw'
-            break      
-        }
+      if (this.lookingForGame) {
+        result = "Search games"
       } else {
-        result = 'Game is in progress'
+        if (this.$store.state.gameEntity.gameOver) {
+          switch(this.$store.state.gameEntity.winner) {
+            case 'crosses':
+              result = 'Crosses won'
+              break
+            case 'noughts':
+              result = 'Noughts won'
+              break
+            case 'draw':
+              result = 'Draw'
+              break      
+          }
+        } else {
+          if (this.isMyTurn)
+            result = 'Your turn'
+          else
+            result = "Openent's turn"
+        }
       }
+      
 
       return result
     }
@@ -121,9 +148,9 @@ export default {
       this.$emit('sizes-click', dimensions)
     },
 
-    resetButtonHandler() {
+    exitButtonHandler() {
       if (this.$store.state.gameEntity.movesCount !== 0)
-        this.$emit('reset-click')
+        this.$emit('exit-click')
     }
   }
 }
@@ -202,16 +229,21 @@ export default {
       padding: 0 0 0 10%;
     }
 
+    p {
+      padding: 0 0 0 10%;
+    }
+
+
     input {
       width: 25%;
       margin: 0 10% 0 0;
     }
 
     #apply-btn {
-      margin: 10% 0 0 0;
+      margin: 10% 0 10% 0;
     }
 
-    #reset-btn {
+    #exit-btn {
       margin: 0 0 15% 0;
     }
   }

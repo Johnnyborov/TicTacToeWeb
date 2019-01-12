@@ -11,19 +11,13 @@
     </div>
     <div>
       <p>Invites Openents Ids:</p>
-      <button @click="acceptButtonHandler">Accept</button>
+      <div id="invites-buttons">
+        <button class="small-btn" @click="acceptButtonHandler">Accept</button>
+        <button class="small-btn" @click="declineButtonHandler">Decline</button>
+      </div>
       <ul>
-        <li v-for="id in invitesOpenentsIds" :key="id" @click="inviteSelectedHandler($event, id)">
-          {{id}}
-        </li>
-      </ul>
-    </div>
-    <div class="narrow">
-      <p>My id: {{myId}}</p>
-      <p>Notification Messages:</p>
-      <ul style="list-style: none;">
-        <li v-for="(msg, index) in reverseNotMsg" :key="index">
-          {{reverseNotMsg.length - index}}. {{msg}}
+        <li v-for="invite in invitesOpenentsIds" :key="invite.id" @click="inviteSelectedHandler($event, invite.id)">
+          {{invite.id}} <br/> x:{{invite.dimensions.xDim}} y:{{invite.dimensions.yDim}} w:{{invite.dimensions.winSize}}
         </li>
       </ul>
     </div>
@@ -36,14 +30,21 @@ export default {
     hubConnection: {
       type: Object,
       default: null
+    },
+
+    myId: {
+      type: String,
+      default: null
+    },
+
+    myPreferredDimensions: {
+      type: Object,
+      default: null
     }
   },
 
   data() {
     return {
-      myId: null,
-
-      notificationsMessages: [],
       avaliablePlayers: [],
       invitesOpenentsIds: [],
 
@@ -54,37 +55,25 @@ export default {
     }
   },
 
-  computed: {
-    reverseNotMsg() {
-      return this.notificationsMessages.slice().reverse()
-    }
-  },
-
   created() {
-    this.hubConnection.on('OnConnected', id => {
-      this.myId = id
-    })
-
     this.hubConnection.on('AvaliablePlayersUpdtated', players => {
       this.avaliablePlayers = players.filter(player=>player.key !== this.myId)
     })
 
-    this.hubConnection.on('NotificationRecieved', msg => {
-      this.notificationsMessages.push(msg)
-    })
-
-    this.hubConnection.on('InviteRequested', (id) => {
-      this.invitesOpenentsIds.push(id)
+    this.hubConnection.on('InviteRequested', (id, dimensions) => {
+      this.invitesOpenentsIds.push({id: id, dimensions: dimensions})
     })
 
     this.hubConnection.on('InviteRemoved', (id) => {
-      let index = this.invitesOpenentsIds.indexOf(id)
-      if (index !== -1)
+      let index = this.invitesOpenentsIds.findIndex(invite => invite.id === id)
+      if (index !== -1) {
         this.invitesOpenentsIds.splice(index,1)
-    })
 
-    this.hubConnection.on('GameCreated', id => {
-      this.$emit('game-created', id === this.myId)
+        if (id == this.selectedInviteOponentId) {
+          if (typeof(this.prevSelectedInviteTarget) !== 'undefined')
+            this.prevSelectedInviteTarget.className = ''
+        }
+      }
     })
   },
 
@@ -108,14 +97,20 @@ export default {
     },
 
     inviteButtonHandler() {
-      if (this.avaliablePlayers.find(player=>player.key === this.selectedPlayerId)) {
-        this.hubConnection.invoke('SendInvite', this.selectedPlayerId)
+      if (this.avaliablePlayers.find(player => player.key === this.selectedPlayerId)) {
+        this.hubConnection.invoke('SendInvite', this.selectedPlayerId, this.myPreferredDimensions)
       }
     },
 
     acceptButtonHandler() {
-      if (this.invitesOpenentsIds.includes(this.selectedInviteOponentId)) {
+      if (this.invitesOpenentsIds.find(invite => invite.id === this.selectedInviteOponentId)) {
         this.hubConnection.invoke('SendAccept', this.selectedInviteOponentId)
+      }
+    },
+
+    declineButtonHandler() {
+      if (this.invitesOpenentsIds.find(invite => invite.id === this.selectedInviteOponentId)) {
+        this.hubConnection.invoke('SendDecline', this.selectedInviteOponentId)
       }
     }
   }
@@ -124,13 +119,24 @@ export default {
 
 <style>
   #game-searcher {
+    background: burlywood;
+    width: 100%;
+    height: 70%;
+    position: absolute;
+
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+  }
+
+  #invites-buttons {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
   }
 
-  .narrow {
-    width: 25%;
+  .small-btn {
+    width: 45%;
   }
 
   .selected {
@@ -143,5 +149,13 @@ export default {
 
   button:active {
     background: green;
+  }
+
+
+  @media (orientation: landscape) {
+    #game-searcher {
+      width: 70%;
+      height: 100%;
+    }
   }
 </style>

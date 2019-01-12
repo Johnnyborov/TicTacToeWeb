@@ -94,12 +94,12 @@ export default {
     makeMove(state, index) {
       setCellNewType(state, index)
 
-      let {over, direction} = GameChecker.checkGame(state)
-      if (over) _finishGame(state, direction)
+      // let conditions = GameChecker.checkGame(state)
+      // if (conditions.over) _finishGame(state, conditions)
     },
 
-    finishGame(state, {direction}) {
-      _finishGame(state, direction)
+    finishGame(state, conditions) {
+      _finishGame(state, conditions)
     }
   }
 }

@@ -65,6 +65,12 @@ export default {
     height: 2em;
   }
 
+  p {
+    font-size: 2vmin;
+    height: 2em;
+    margin: 0;
+  }
+
   button {
     width: 20vmin;
     font-size: 3vmin;
