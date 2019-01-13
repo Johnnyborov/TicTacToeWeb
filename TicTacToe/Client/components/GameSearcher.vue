@@ -32,11 +32,6 @@ export default {
       default: null
     },
 
-    myId: {
-      type: String,
-      default: null
-    },
-
     myPreferredDimensions: {
       type: Object,
       default: null
@@ -45,6 +40,8 @@ export default {
 
   data() {
     return {
+      myId: '',
+
       avaliablePlayers: [],
       invitesOpenentsIds: [],
 
@@ -56,13 +53,13 @@ export default {
   },
 
   created() {
-    this.hubConnection.on('AvaliablePlayersUpdtated', players => {
-      this.avaliablePlayers = players.filter(player=>player.key !== this.myId)
+    this.hubConnection.on('MyIdAndAvaliablePlayers', (id, players)=> {
+      this.myId = id
+      this.updateAvaliablePlayers(players)
+    })
 
-      // if connection hasn't started yet
-      if (this.myId == null) setTimeout(()=>{
-        this.avaliablePlayers = this.avaliablePlayers.filter(player=>player.key !== this.myId)
-      }, 300)
+    this.hubConnection.on('AvaliablePlayersUpdtated', players => {
+      this.updateAvaliablePlayers(players)
     })
 
     this.hubConnection.on('InviteRequested', (id, dimensions) => {
@@ -70,15 +67,11 @@ export default {
     })
 
     this.hubConnection.on('InviteRemoved', (id) => {
-      let index = this.invitesOpenentsIds.findIndex(invite => invite.id === id)
-      if (index !== -1) {
-        this.invitesOpenentsIds.splice(index,1)
+      this.removeInvite(id)
+    })
 
-        if (id == this.selectedInviteOponentId) {
-          if (typeof(this.prevSelectedInviteTarget) !== 'undefined')
-            this.prevSelectedInviteTarget.className = ''
-        }
-      }
+    this.hubConnection.on('GameCreated', (id, dimensions) => {
+      this.$emit('game-created', {isMyTurn: id === this.myId, dimensions: dimensions})
     })
   },
 
@@ -87,19 +80,22 @@ export default {
       if (typeof(this.prevSelectedPlayerTarget) !== 'undefined')
         this.prevSelectedPlayerTarget.className = ''
 
-      this.selectedPlayerId = id
       this.prevSelectedPlayerTarget = event.target
+
       event.target.className = 'selected'
+      this.selectedPlayerId = id
     },
 
     inviteSelectedHandler(event, id) {
       if (typeof(this.prevSelectedInviteTarget) !== 'undefined')
         this.prevSelectedInviteTarget.className = ''
 
-      this.selectedInviteOponentId = id
       this.prevSelectedInviteTarget = event.target
+
       event.target.className = 'selected'
+      this.selectedInviteOponentId = id
     },
+
 
     inviteButtonHandler() {
       if (this.avaliablePlayers.find(player => player.key === this.selectedPlayerId)) {
@@ -116,6 +112,29 @@ export default {
     declineButtonHandler() {
       if (this.invitesOpenentsIds.find(invite => invite.id === this.selectedInviteOponentId)) {
         this.hubConnection.invoke('SendDecline', this.selectedInviteOponentId)
+      }
+    },
+
+
+    updateAvaliablePlayers(players) {
+      this.avaliablePlayers = players.filter(player=>player.key !== this.myId)
+
+      if (!this.avaliablePlayers.find(player=> player.key === this.selectedPlayerId)) {
+        this.selectedPlayerId = ''
+      }
+    },
+
+    removeInvite(id) {
+      let index = this.invitesOpenentsIds.findIndex(invite => invite.id === id)
+      if (index !== -1) {
+        this.invitesOpenentsIds.splice(index,1)
+
+        if (id == this.selectedInviteOponentId) {
+          if (typeof(this.prevSelectedInviteTarget) !== 'undefined')
+            this.prevSelectedInviteTarget.className = ''
+
+          this.selectedInviteOponentId = ''
+        }
       }
     }
   }

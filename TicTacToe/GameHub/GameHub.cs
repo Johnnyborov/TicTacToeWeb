@@ -10,6 +10,7 @@ namespace TicTacToe.GameHub
   public class Player
   {
     internal Dictionary<string, Dimensions> InvitedPlayersIds { get; set; } = new Dictionary<string, Dimensions>();
+    internal List<string> InvitedByIds { get; set; } = new List<string>();
     internal Game Game { get; set; }
   }
 
@@ -51,9 +52,11 @@ namespace TicTacToe.GameHub
         bool added = false;
         lock (_lock)
         {
-          if (AvaliablePlayers.ContainsKey(inviterId) && !AvaliablePlayers[inviterId].InvitedPlayersIds.ContainsKey(inviteeId))
+          if (AvaliablePlayers.ContainsKey(inviterId) && AvaliablePlayers.ContainsKey(inviteeId) &&
+              !AvaliablePlayers[inviterId].InvitedPlayersIds.ContainsKey(inviteeId))
           {
             AvaliablePlayers[inviterId].InvitedPlayersIds.Add(inviteeId, dimensions);
+            AvaliablePlayers[inviteeId].InvitedByIds.Add(inviterId);
             added = true;
           }
         }
@@ -72,9 +75,10 @@ namespace TicTacToe.GameHub
       bool removed = false;
       lock (_lock)
       {
-        if (AvaliablePlayers.ContainsKey(inviterId))
+        if (AvaliablePlayers.ContainsKey(inviterId) && AvaliablePlayers.ContainsKey(inviteeId))
         {
           removed = AvaliablePlayers[inviterId].InvitedPlayersIds.Remove(inviteeId);
+          AvaliablePlayers[inviteeId].InvitedByIds.Remove(inviterId);
         }
       }
 
@@ -90,19 +94,47 @@ namespace TicTacToe.GameHub
 
       Game game = null;
 
+      Random rand = new Random();
+      bool inviterFirstMove = rand.Next(0, 2) == 0;
+
       lock (_lock)
       {
         if (AvaliablePlayers.ContainsKey(inviterId) && AvaliablePlayers.ContainsKey(inviteeId) &&
             AvaliablePlayers[inviterId].InvitedPlayersIds.ContainsKey(inviteeId))
         {
           var dims = AvaliablePlayers[inviterId].InvitedPlayersIds[inviteeId];
-          game = new Game(inviterId, inviteeId, dims);
+          if (inviterFirstMove) // crosses = inviter
+          {
+            game = new Game(inviterId, inviteeId, dims);
+          }
+          else // crosses = invitee
+          {
+            game = new Game(inviteeId, inviterId, dims);
+          }
 
           AvaliablePlayers[inviterId].Game = game;
           AvaliablePlayers[inviteeId].Game = game;
 
-          AvaliablePlayers[inviterId].InvitedPlayersIds.Clear();
-          AvaliablePlayers[inviteeId].InvitedPlayersIds.Clear();
+
+          // remove inviter from other avaliable players Invited and InvitedBy lists
+          foreach (var id in AvaliablePlayers[inviterId].InvitedByIds)
+          {
+            if (id != inviterId && id != inviteeId && AvaliablePlayers.ContainsKey(id))
+            {
+              AvaliablePlayers[id].InvitedPlayersIds.Remove(inviterId);
+              AvaliablePlayers[id].InvitedByIds.Remove(inviterId);
+            }
+          }
+          // remove invitee from other avaliable players Invited and InvitedBy lists
+          foreach (var id in AvaliablePlayers[inviteeId].InvitedByIds)
+          {
+            if (id != inviterId && id != inviteeId && AvaliablePlayers.ContainsKey(id))
+            {
+              AvaliablePlayers[id].InvitedPlayersIds.Remove(inviteeId);
+              AvaliablePlayers[id].InvitedByIds.Remove(inviteeId);
+            }
+          }
+
 
           PlayingPlayers.Add(inviterId, AvaliablePlayers[inviterId]);
           PlayingPlayers.Add(inviteeId, AvaliablePlayers[inviteeId]);
@@ -117,13 +149,19 @@ namespace TicTacToe.GameHub
         await Groups.RemoveFromGroupAsync(inviterId, "AvaliablePlayers");
         await Groups.RemoveFromGroupAsync(inviteeId, "AvaliablePlayers");
 
-        await Clients.Group("AvaliablePlayers").SendAsync("InviteRemoved", inviterId);
-        await Clients.Group("AvaliablePlayers").SendAsync("InviteRemoved", inviteeId);
+        await Clients.GroupExcept("AvaliablePlayers", inviterId, inviteeId).SendAsync("InviteRemoved", inviterId);
+        await Clients.GroupExcept("AvaliablePlayers", inviterId, inviteeId).SendAsync("InviteRemoved", inviteeId);
         
-        await Clients.Group("AvaliablePlayers").SendAsync("AvaliablePlayersUpdtated", AvaliablePlayers.ToArray());
+        await Clients.GroupExcept("AvaliablePlayers", inviterId, inviteeId).SendAsync("AvaliablePlayersUpdtated", AvaliablePlayers.ToArray());
 
-
-        await Clients.Clients(inviterId, inviteeId).SendAsync("GameCreated", inviterId, game.GameDimensions);
+        if (inviterFirstMove)
+        {
+          await Clients.Clients(inviterId, inviteeId).SendAsync("GameCreated", inviterId, game.GameDimensions);
+        }
+        else
+        {
+          await Clients.Clients(inviterId, inviteeId).SendAsync("GameCreated", inviteeId, game.GameDimensions);
+        }
       }
     }
 
@@ -158,7 +196,9 @@ namespace TicTacToe.GameHub
       }
 
       await Groups.AddToGroupAsync(currId, "AvaliablePlayers");
-      await Clients.Group("AvaliablePlayers").SendAsync("AvaliablePlayersUpdtated", AvaliablePlayers.ToArray());
+
+      await Clients.Caller.SendAsync("MyIdAndAvaliablePlayers", currId, AvaliablePlayers.ToArray());
+      await Clients.GroupExcept("AvaliablePlayers", Context.ConnectionId).SendAsync("AvaliablePlayersUpdtated", AvaliablePlayers.ToArray());
     }
 
     public override async Task OnConnectedAsync()
@@ -171,8 +211,8 @@ namespace TicTacToe.GameHub
       await Groups.AddToGroupAsync(Context.ConnectionId, "AvaliablePlayers");
 
 
-      await Clients.Caller.SendAsync("OnConnected", Context.ConnectionId);
-      await Clients.Group("AvaliablePlayers").SendAsync("AvaliablePlayersUpdtated", AvaliablePlayers.ToArray());
+      await Clients.Caller.SendAsync("MyIdAndAvaliablePlayers", Context.ConnectionId, AvaliablePlayers.ToArray());
+      await Clients.GroupExcept("AvaliablePlayers", Context.ConnectionId).SendAsync("AvaliablePlayersUpdtated", AvaliablePlayers.ToArray());
 
 
       await base.OnConnectedAsync();
@@ -211,8 +251,8 @@ namespace TicTacToe.GameHub
 
       await Groups.RemoveFromGroupAsync(currId, "AvaliablePlayers");
 
-      await Clients.Group("AvaliablePlayers").SendAsync("InviteRemoved", currId);
-      await Clients.Group("AvaliablePlayers").SendAsync("AvaliablePlayersUpdtated", AvaliablePlayers.ToArray());
+      await Clients.GroupExcept("AvaliablePlayers", currId).SendAsync("InviteRemoved", currId);
+      await Clients.GroupExcept("AvaliablePlayers", currId).SendAsync("AvaliablePlayersUpdtated", AvaliablePlayers.ToArray());
 
 
       await base.OnDisconnectedAsync(exception);

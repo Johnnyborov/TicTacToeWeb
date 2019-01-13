@@ -119,7 +119,9 @@ export default {
           }
 
           if (this.$store.state.gameEntity.winByForfeit)
-            result = 'Oponent left the game.<br/>' + result
+            result = 'Oponent left.<br/>' + result
+
+          result = '<i>My side: ' + this.mySide + '</i>.<br/>' + result
         }
         else
         {
