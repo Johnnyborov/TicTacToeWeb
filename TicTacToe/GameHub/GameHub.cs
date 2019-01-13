@@ -47,7 +47,7 @@ namespace TicTacToe.GameHub
     {
       string inviterId = Context.ConnectionId;
 
-      if (inviteeId != inviterId)
+      if (inviteeId != inviterId && Game.DimensionsAreValid(dimensions))
       {
         bool added = false;
         lock (_lock)

@@ -71,6 +71,10 @@ export default {
     margin: 0;
   }
 
+  li {
+    font-size: 2vmin;
+  }
+
   button {
     width: 20vmin;
     font-size: 3vmin;
@@ -84,7 +88,7 @@ export default {
     font-size: 3vmin;
   }
 
-  h3, h5, button {
+  h3, h5, button, ul, p {
     padding: 0;
     border: 0;
     margin: 0;

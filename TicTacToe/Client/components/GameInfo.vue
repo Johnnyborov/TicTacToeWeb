@@ -255,10 +255,6 @@ export default {
       padding: 0 0 0 10%;
     }
 
-    p {
-      padding: 0 0 0 10%;
-    }
-
     input {
       width: 25%;
       margin: 0 10% 0 0;

@@ -2,7 +2,9 @@
   <div id="game-searcher">
     <div>
       <p>Connected Players Ids:</p>
-      <button @click="inviteButtonHandler">Invite</button>
+      <div class="buttons-div">
+        <button class="small-btn" @click="inviteButtonHandler">Invite</button>
+      </div>
       <ul>
         <li v-for="player in avaliablePlayers" :key="player.key" @click="playerSelectedHandler($event, player.key)">
           {{player.key}}
@@ -11,7 +13,7 @@
     </div>
     <div>
       <p>Invites Oponents Ids:</p>
-      <div id="invites-buttons">
+      <div class="buttons-div">
         <button class="small-btn" @click="acceptButtonHandler">Accept</button>
         <button class="small-btn" @click="declineButtonHandler">Decline</button>
       </div>
@@ -153,7 +155,7 @@ export default {
     justify-content: space-around;
   }
 
-  #invites-buttons {
+  .buttons-div {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
@@ -161,6 +163,7 @@ export default {
 
   .small-btn {
     width: 45%;
+    background-color: darkolivegreen;
   }
 
   .selected {

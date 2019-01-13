@@ -15,7 +15,7 @@ import GameField from './GameField.vue'
 import GameInfo from './GameInfo.vue'
 
 import Resources from '../resources/resources.js'
-import * as SignalR from '@aspnet/signalr'
+import {HubConnectionBuilder, LogLevel} from '@aspnet/signalr'
 
 const debug = process.env.NODE_ENV !== 'production'
 
@@ -53,9 +53,9 @@ export default {
     if (debug)
       url = 'http://localhost:45353/game'
 
-    this.hubConnection = new SignalR.HubConnectionBuilder()
+    this.hubConnection = new HubConnectionBuilder()
       .withUrl(url)
-      .configureLogging(SignalR.LogLevel.Information)
+      .configureLogging(LogLevel.Information)
       .build()
 
     this.hubConnection.serverTimeoutInMilliseconds = 12 * 1000

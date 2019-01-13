@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "name": "vueapp",
+  "name": "TicTacToe",
   "private": true,
   "scripts": {
     "dev": "webpack-dev-server --hot --mode development --devtool source-map",

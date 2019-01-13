@@ -24,6 +24,14 @@ namespace TicTacToe.GameHub
   {
     private enum CellTypes: byte { Clear = 0, Cross, Nought }
 
+    private const int MinXDim = 3;
+    private const int MinYDim = 3;
+    private const int MinWinSize = 2;
+    private const int MaxXDim = 100;
+    private const int MaxYDim = 100;
+    private const int MaxWinSize = 30;
+
+
     private CellTypes[] Cells;
 
     private int MovesCount { get; set; } = 0;
@@ -38,13 +46,25 @@ namespace TicTacToe.GameHub
     internal string CrossesId { get; set; }
     internal string NoughtsId { get; set; }
 
-    public Game(string inviterId, string inviteeId, Dimensions dims)
+    internal Game(string crossesId, string noughtsId, Dimensions dimensions)
     {
-      CrossesId = inviterId;
-      NoughtsId = inviteeId;
+      CrossesId = crossesId;
+      NoughtsId = noughtsId;
 
-      GameDimensions = dims;
+      GameDimensions = dimensions;
       Cells = new CellTypes[GameDimensions.xDim * GameDimensions.yDim];
+    }
+
+    internal static bool DimensionsAreValid(Dimensions dimensions)
+    {
+      if (dimensions.xDim < MinXDim || dimensions.yDim < MinYDim || dimensions.winSize < MinWinSize ||
+          dimensions.xDim > MaxXDim || dimensions.yDim > MaxYDim || dimensions.winSize > MaxWinSize ||
+          dimensions.winSize > Math.Min(dimensions.xDim, dimensions.yDim))
+      {
+        return false;
+      }
+
+      return true;
     }
 
     private string CalculateWinner()
@@ -106,6 +126,7 @@ namespace TicTacToe.GameHub
               Winner = CalculateWinner();
               GameOver = true;
               GameOverConditions = new Conditions { winner = Winner, direction = "right", i = i, j = j };
+              return;
             }
           }
         }
@@ -133,6 +154,7 @@ namespace TicTacToe.GameHub
               Winner = CalculateWinner();
               GameOver = true;
               GameOverConditions = new Conditions { winner = Winner, direction = "down", i = i, j = j };
+              return;
             }
           }
         }
@@ -160,6 +182,7 @@ namespace TicTacToe.GameHub
               Winner = CalculateWinner();
               GameOver = true;
               GameOverConditions = new Conditions { winner = Winner, direction = "right+down", i = i, j = j };
+              return;
             }
           }
         }
@@ -187,6 +210,7 @@ namespace TicTacToe.GameHub
               Winner = CalculateWinner();
               GameOver = true;
               GameOverConditions = new Conditions { winner = Winner, direction = "left+down", i = i, j = j };
+              return;
             }
           }
         }
@@ -197,6 +221,7 @@ namespace TicTacToe.GameHub
         Winner = "draw";
         GameOver = true;
         GameOverConditions = new Conditions { winner = Winner, direction = "draw", i = -1, j = -1 };
+        return;
       }
     }
 
