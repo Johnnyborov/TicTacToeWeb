@@ -46,7 +46,7 @@ namespace TicTacToe.GameHub
     internal string CrossesId { get; set; }
     internal string NoughtsId { get; set; }
 
-    internal Game(string crossesId, string noughtsId, Dimensions dimensions)
+    private Game(string crossesId, string noughtsId, Dimensions dimensions)
     {
       CrossesId = crossesId;
       NoughtsId = noughtsId;
@@ -237,6 +237,18 @@ namespace TicTacToe.GameHub
       }
     }
 
+    internal string GetOpponentId(string currId)
+    {
+      if (currId == CrossesId)
+      {
+        return NoughtsId;
+      }
+      else
+      {
+        return CrossesId;
+      }
+    }
+
     internal bool IsGameOver()
     {
       return GameOver;
@@ -268,5 +280,25 @@ namespace TicTacToe.GameHub
 
       return false;
     }
+
+    internal static Game CreateGame(string player1Id, string player2Id, Dimensions dims)
+    {
+      Game game;
+
+      Random rand = new Random();
+      bool player1FirstMove = rand.Next(0, 2) == 0;
+
+      if (player1FirstMove) // crosses = player1
+      {
+        game = new Game(player1Id, player2Id, dims);
+      }
+      else // crosses = player2
+      {
+        game = new Game(player2Id, player1Id, dims);
+      }
+
+      return game;
+    }
+
   }
 }

@@ -24,9 +24,6 @@ function _finishGame(state, conditions) {
   state.gameOver = true
 
   setWinChainIndexes(state, conditions)
-
-  if (conditions.direction === 'forfeit')
-    state.winByForfeit = true
 }
 
 // winSize cells in one of 4 directions starting from cell (i,j)
@@ -64,7 +61,6 @@ export default {
   namespaced: true,
   
   state: {
-    winByForfeit: false,
     gameOver: false,
     movesCount: 0,
     winner: '',

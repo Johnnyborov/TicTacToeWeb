@@ -1,5 +1,5 @@
 <template>
-  <div id="game-searcher">
+  <div id="game-search">
     <div>
       <p>Connected Players Ids:</p>
       <div class="buttons-div">
@@ -12,13 +12,13 @@
       </ul>
     </div>
     <div>
-      <p>Invites Oponents Ids:</p>
+      <p>Invites Opponents Ids:</p>
       <div class="buttons-div">
         <button class="small-btn" @click="acceptButtonHandler">Accept</button>
         <button class="small-btn" @click="declineButtonHandler">Decline</button>
       </div>
       <ul>
-        <li v-for="invite in invitesOpenentsIds" :key="invite.id" @click="inviteSelectedHandler($event, invite.id)">
+        <li v-for="invite in invitesOpponentsIds" :key="invite.id" @click="inviteSelectedHandler($event, invite.id)">
           {{invite.id}} <br/> x:{{invite.dimensions.xDim}} y:{{invite.dimensions.yDim}} w:{{invite.dimensions.winSize}}
         </li>
       </ul>
@@ -28,53 +28,16 @@
 
 <script>
 export default {
-  props: {
-    hubConnection: {
-      type: Object,
-      default: null
-    },
-
-    myPreferredDimensions: {
-      type: Object,
-      default: null
-    }
-  },
-
   data() {
     return {
-      myId: '',
-
       avaliablePlayers: [],
-      invitesOpenentsIds: [],
+      invitesOpponentsIds: [],
 
       prevSelectedPlayerTarget: undefined,
       prevSelectedInviteTarget: undefined,
       selectedPlayerId: '',
-      selectedInviteOponentId: ''
+      selectedInviteOpponentId: ''
     }
-  },
-
-  created() {
-    this.hubConnection.on('MyIdAndAvaliablePlayers', (id, players)=> {
-      this.myId = id
-      this.updateAvaliablePlayers(players)
-    })
-
-    this.hubConnection.on('AvaliablePlayersUpdtated', players => {
-      this.updateAvaliablePlayers(players)
-    })
-
-    this.hubConnection.on('InviteRequested', (id, dimensions) => {
-      this.invitesOpenentsIds.push({id: id, dimensions: dimensions})
-    })
-
-    this.hubConnection.on('InviteRemoved', (id) => {
-      this.removeInvite(id)
-    })
-
-    this.hubConnection.on('GameCreated', (id, dimensions) => {
-      this.$emit('game-created', {isMyTurn: id === this.myId, dimensions: dimensions})
-    })
   },
 
   methods: {
@@ -95,31 +58,31 @@ export default {
       this.prevSelectedInviteTarget = event.target
 
       event.target.className = 'selected'
-      this.selectedInviteOponentId = id
+      this.selectedInviteOpponentId = id
     },
 
 
     inviteButtonHandler() {
       if (this.avaliablePlayers.find(player => player.key === this.selectedPlayerId)) {
-        this.hubConnection.invoke('SendInvite', this.selectedPlayerId, this.myPreferredDimensions)
+        this.$emit('invite-click', this.selectedPlayerId)
       }
     },
 
     acceptButtonHandler() {
-      if (this.invitesOpenentsIds.find(invite => invite.id === this.selectedInviteOponentId)) {
-        this.hubConnection.invoke('SendAccept', this.selectedInviteOponentId)
+      if (this.invitesOpponentsIds.find(invite => invite.id === this.selectedInviteOpponentId)) {
+        this.$emit('accept-click', this.selectedInviteOpponentId)
       }
     },
 
     declineButtonHandler() {
-      if (this.invitesOpenentsIds.find(invite => invite.id === this.selectedInviteOponentId)) {
-        this.hubConnection.invoke('SendDecline', this.selectedInviteOponentId)
+      if (this.invitesOpponentsIds.find(invite => invite.id === this.selectedInviteOpponentId)) {
+        this.$emit('decline-click', this.selectedInviteOpponentId)
       }
     },
 
 
-    updateAvaliablePlayers(players) {
-      this.avaliablePlayers = players.filter(player=>player.key !== this.myId)
+    updateAvaliablePlayers(players, myId) {
+      this.avaliablePlayers = players.filter(player=>player.key !== myId)
 
       if (!this.avaliablePlayers.find(player=> player.key === this.selectedPlayerId)) {
         this.selectedPlayerId = ''
@@ -127,15 +90,15 @@ export default {
     },
 
     removeInvite(id) {
-      let index = this.invitesOpenentsIds.findIndex(invite => invite.id === id)
+      let index = this.invitesOpponentsIds.findIndex(invite => invite.id === id)
       if (index !== -1) {
-        this.invitesOpenentsIds.splice(index,1)
+        this.invitesOpponentsIds.splice(index,1)
 
-        if (id == this.selectedInviteOponentId) {
+        if (id == this.selectedInviteOpponentId) {
           if (typeof(this.prevSelectedInviteTarget) !== 'undefined')
             this.prevSelectedInviteTarget.className = ''
 
-          this.selectedInviteOponentId = ''
+          this.selectedInviteOpponentId = ''
         }
       }
     }
@@ -144,7 +107,7 @@ export default {
 </script>
 
 <style>
-  #game-searcher {
+  #game-search {
     background: burlywood;
     width: 100%;
     height: 70%;
@@ -180,7 +143,7 @@ export default {
 
 
   @media (orientation: landscape) {
-    #game-searcher {
+    #game-search {
       width: 70%;
       height: 100%;
     }

@@ -1,30 +1,44 @@
 <template>
 <div id="game-info">
   <h5 class="margin-bottom" id="game-status"><span v-html="this.gameStatus"></span></h5>
-  <p>Preferred Dimensions:</p>
-  <div id="game-dims">
-    <div>
-      <label>x-dim:</label>
-      <input v-model.trim.number="xDim" type="number"
-            :min="limits.minXDim" :max="limits.maxXDim" required>
+  <template v-if="lookingForGame">
+    <p>Preferred Dimensions:</p>
+    <div id="game-dims">
+      <div>
+        <label>x-dim:</label>
+        <input v-model.trim.number="xDim" type="number"
+              :min="limits.minXDim" :max="limits.maxXDim" required>
+      </div>
+      <div>
+        <label>y-dim:</label>
+        <input v-model.trim.number="yDim" type="number"
+              :min="limits.minYDim" :max="limits.maxYDim" required/>
+      </div>
+      <div>
+        <label>win-size:</label>
+        <input v-model.trim.number="winSize" type="number"
+              :min="limits.minWinSize" :max="limits.maxWinSize" required/>
+      </div>
+      <button :disabled="!lookingForGame" id="apply-btn" class="game-btn" @click="applyButtonHandler">Apply</button>
     </div>
-    <div>
-      <label>y-dim:</label>
-      <input v-model.trim.number="yDim" type="number"
-            :min="limits.minYDim" :max="limits.maxYDim" required/>
+    <div id="curr-dims">
+      <p class="margin-bottom">My Current Preferred Dimensions: </p>
+      <p>{{myPreferredDimensions.xDim}} y:{{myPreferredDimensions.yDim}} w:{{myPreferredDimensions.winSize}}</p>
     </div>
-    <div>
-      <label>win-size:</label>
-      <input v-model.trim.number="winSize" type="number"
-            :min="limits.minWinSize" :max="limits.maxWinSize" required/>
+  </template>
+  <template v-else>
+    <div v-if="!opponentExited && !replayOffered">
+      <p v-if="replayDeclined" class="margin-bottom">Opponent declined your replay request</p>
+      <button class="game-btn margin-bottom" @click="offerReplayButtonHandler">Offer Replay</button>
     </div>
-    <button :disabled="!lookingForGame" id="apply-btn" class="game-btn" @click="applyButtonHandler">Apply</button>
-  </div>
-  <div id="curr-dims">
-    <p class="margin-bottom">My Current Preferred Dimensions: </p>
-    <p>{{myPreferredDimensions.xDim}} y:{{myPreferredDimensions.yDim}} w:{{myPreferredDimensions.winSize}}</p>
-  </div>
-  <button :disabled="lookingForGame" id="exit-btn" class="game-btn" @click="$emit('exit-click')">Exit Game</button>
+    <div v-else-if="!opponentExited">
+      <p>Opponent offered to replay</p>
+      <button class="game-btn margin-bottom" @click="$emit('accept-replay-click')">Accept</button>
+      <button class="game-btn" @click="declineButtonHandler">Decline</button>
+    </div>
+
+    <button id="exit-btn" class="game-btn" @click="$emit('exit-click')">Exit Game</button>
+  </template>
 </div>
 </template>
 
@@ -86,7 +100,11 @@ export default {
         maxXDim: dimLimits.maxXDim,
         maxYDim: dimLimits.maxYDim,
         maxWinSize: dimLimits.maxWinSize
-      }
+      },
+
+      opponentExited: false,
+      replayOffered: false,
+      replayDeclined: false
     }
   },
 
@@ -118,18 +136,18 @@ export default {
               break      
           }
 
-          if (this.$store.state.gameEntity.winByForfeit)
-            result = 'Oponent left.<br/>' + result
-
-          result = '<i>My side: ' + this.mySide + '</i>.<br/>' + result
+          if (this.opponentExited)
+            result = 'Opponent left.<br/>' + result
         }
         else
         {
           if (this.isMyTurn)
-            result = '<i>My side: ' + this.mySide + '</i>.<br/>Your turn.'
+            result = 'Your turn.'
           else
-            result = '<i>My side: ' + this.mySide + "</i>.<br/>Oponent's turn."
+            result = "Opponent's turn."
         }
+
+        result = '<i>Your side: ' + this.mySide + '</i>.<br/><br/>' + result
       }
 
       return result
@@ -168,6 +186,18 @@ export default {
         return
 
       this.$emit('sizes-click', dimensions)
+    },
+
+    offerReplayButtonHandler() {
+      this.replayDeclined = false
+
+      this.$emit('offer-replay-click')
+    },
+
+    declineButtonHandler() {
+      this.replayOffered = false
+
+      this.$emit('decline-replay-click')
     }
   }
 }
