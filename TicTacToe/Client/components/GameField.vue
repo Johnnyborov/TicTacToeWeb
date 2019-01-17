@@ -88,11 +88,6 @@ export default {
     cellIcons: {
       type: Object,
       default: null
-    },
-
-    isMyTurn: {
-      type: Boolean,
-      default: false
     }
   },
 
@@ -108,12 +103,12 @@ export default {
   },
 
   computed: {
-    state() {
+    gameState() {
       return this.$store.state.gameEntity
     },
 
     gameOver() {
-      return this.state.gameOver
+      return this.gameState.gameOver
     }
   },
 
@@ -159,27 +154,27 @@ export default {
     },
 
     mouseDownHandler(event) {
-      if (!this.isMyTurn) return
+      if (!this.gameState.isMyTurn) return
 
-      let index = getCellIndex(event, this.context, this.$store.state.gameEntity)
+      let index = getCellIndex(event, this.context, this.gameState)
       this.cellMouseDown(index)
     },
 
     mouseUpHandler(event) {
-      if (!this.isMyTurn) return
+      if (!this.gameState.isMyTurn) return
 
-      let index = getCellIndex(event, this.context, this.$store.state.gameEntity)
+      let index = getCellIndex(event, this.context, this.gameState)
       this.cellMouseUp(index)
     },
 
     mouseLeaveHandler() {
-      if (!this.isMyTurn) return
+      if (!this.gameState.isMyTurn) return
 
       this.cellMouseUp(-1)
     },
 
     touchStartHandler(e) {
-      if (!this.isMyTurn) return
+      if (!this.gameState.isMyTurn) return
 
       // deactivate prevoius mouse-down if more than one touch happens simultaneously
       if (e.touches.length > 1) {
@@ -187,12 +182,12 @@ export default {
       }
 
       // handle new one
-      this.cellMouseDown(getCellIndex(e.touches[e.touches.length-1], this.context, this.$store.state.gameEntity))
+      this.cellMouseDown(getCellIndex(e.touches[e.touches.length-1], this.context, this.gameState))
       this.lastTouch = e.touches[e.touches.length-1]
     },
 
     touchEndHandler(e) {
-      if (!this.isMyTurn) return
+      if (!this.gameState.isMyTurn) return
 
       if (this.lastTouch === null) return
 
@@ -203,14 +198,14 @@ export default {
       }
 
       if (removed) {
-        this.cellMouseUp(getCellIndex(this.lastTouch, this.context, this.state))
+        this.cellMouseUp(getCellIndex(this.lastTouch, this.context, this.gameState))
         this.lastTouch = null
       }
     },
 
 
     cellMouseDown(index) {
-      if (index > -1 && !this.state.gameOver && this.state.cells[index] === 'clear') {
+      if (index > -1 && !this.gameState.gameOver && this.gameState.cells[index] === 'clear') {
         // set pressed cell look
         this.lastPressedCellIndex = index
         this.drawCell(index, 'pressed')
@@ -221,7 +216,7 @@ export default {
 
     cellMouseUp(index) {
       if (index > -1 && index === this.lastPressedCellIndex &&
-          !this.state.gameOver && this.state.cells[index] === 'clear'
+          !this.gameState.gameOver && this.gameState.cells[index] === 'clear'
       ) {
         // make the actual move
         this.$emit('cell-clicked', index)
@@ -238,20 +233,20 @@ export default {
       this.context.clearRect(0,0,this.context.canvas.width,this.context.canvas.height)
 
       let look = ''
-      if (this.state.gameOver) {
+      if (this.gameState.gameOver) {
         look = 'disabled'
       } else {
         look = 'normal'
       }
 
       // draw all cells with 'disabled' or 'normal' look
-      for (let index = 0; index < this.state.cells.length; index++) {
+      for (let index = 0; index < this.gameState.cells.length; index++) {
         this.drawCell(index, look)
       }
 
-      if (this.state.gameOver) {
+      if (this.gameState.gameOver) {
         // redraw win chain cells with 'chain-member' look
-        this.state.winChainIndexes.forEach( index => {
+        this.gameState.winChainIndexes.forEach( index => {
           this.drawCell(index, 'chain-member')
         })
       }
@@ -261,7 +256,7 @@ export default {
       if (!this.context) return
       let context = this.context
 
-      let {xDim,yDim,cellBorderWidth,imgSize,imgStep} = getSizeAttributes(context, this.state)
+      let {xDim,yDim,cellBorderWidth,imgSize,imgStep} = getSizeAttributes(context, this.gameState)
 
       context.strokeStyle = getCellBorderStyle(cellLook)
       context.lineWidth = cellBorderWidth
@@ -274,7 +269,7 @@ export default {
                         imgSize+cellBorderWidth, imgSize+cellBorderWidth)
 
       // draw cell icon
-      let cellImg = getCellImg(this.state.cells[index], this.cellIcons) 
+      let cellImg = getCellImg(this.gameState.cells[index], this.cellIcons) 
       context.drawImage(cellImg, cellBorderWidth+imgStep*j, cellBorderWidth+imgStep*i, imgSize, imgSize)
     }
   }

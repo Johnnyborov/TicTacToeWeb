@@ -1,7 +1,10 @@
-import GameChecker from './gameEntityGameChecker.js'
+function _newGame(state, isMyTurn) {
+  if (isMyTurn)
+    state.mySide = 'crosses'
+  else
+    state.mySide = 'noughts'
 
-function _newGame(state) {
-  state.winByForfeit = false
+  state.isMyTurn = isMyTurn
   state.gameOver = false
   state.movesCount = 0
   state.winner = ''
@@ -62,6 +65,8 @@ export default {
   
   state: {
     gameOver: false,
+    isMyTurn: false,
+    mySide: '',
     movesCount: 0,
     winner: '',
     xDim: 10,
@@ -72,19 +77,18 @@ export default {
   },
 
   mutations: {
-    newGame(state, {xDim, yDim, winSize}) {
-      state.xDim = xDim
-      state.yDim = yDim
-      state.winSize = winSize
+    newGame(state, {dimensions, isMyTurn}) {
+      state.xDim = dimensions.xDim
+      state.yDim = dimensions.yDim
+      state.winSize = dimensions.winSize
       
-      _newGame(state)
+      _newGame(state, isMyTurn)
     },
 
     makeMove(state, index) {
       setCellNewType(state, index)
 
-      // let conditions = GameChecker.checkGame(state)
-      // if (conditions.over) _finishGame(state, conditions)
+      state.isMyTurn = !state.isMyTurn
     },
 
     finishGame(state, conditions) {

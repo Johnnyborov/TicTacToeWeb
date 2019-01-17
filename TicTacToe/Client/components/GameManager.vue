@@ -1,12 +1,12 @@
 <template>
   <div id="game-manager">
-    <game-search ref="game-search" v-if="lookingForGame" @invite-click="inviteClickHandler"
+    <game-search v-if="lookingForGame" @invite-click="inviteClickHandler"
       @accept-click="acceptClickHandler" @decline-click="declineClickHandler"></game-search>
-    <game-field v-else @cell-clicked="cellClickHandler" :cellIcons="resources.cellIcons" :isMyTurn="isMyTurn"></game-field>
+    <game-field v-else @cell-clicked="cellClickHandler" :cellIcons="resources.cellIcons"></game-field>
 
-    <game-info ref="game-info" @exit-click="exitClickHandler" @sizes-click="sizesClickHandler"
-      @offer-replay-click="offerReplayClickHandler" @accept-replay-click="acceptReplayClickHandler" @decline-replay-click="declineReplayClickHandler"
-      :isMyTurn="isMyTurn" :mySide="mySide" :lookingForGame="lookingForGame" :myPreferredDimensions="myPreferredDimensions"></game-info>
+    <game-info @exit-click="exitClickHandler" @sizes-click="sizesClickHandler" @offer-replay-click="offerReplayClickHandler"
+      @accept-replay-click="acceptReplayClickHandler" @decline-replay-click="declineReplayClickHandler" :lookingForGame="lookingForGame"
+      :opponentExited="opponentExited" :replayOffered="replayOffered" :replayDeclined="replayDeclined"></game-info>
   </div>
 </template>
 
@@ -16,6 +16,7 @@ import GameField from './GameField.vue'
 import GameInfo from './GameInfo.vue'
 
 import Resources from '../resources/resources.js'
+
 import {HubConnectionBuilder, LogLevel} from '@aspnet/signalr'
 
 const debug = process.env.NODE_ENV !== 'production'
@@ -29,28 +30,26 @@ export default {
 
   data() {
     return {
-      lookingForGame: true,
+      resources: {
+        cellIcons: null
+      },
 
       hubConnection: null,
       myId: '',
 
-      myPreferredDimensions: {
-        xDim: this.$store.state.gameEntity.xDim,
-        yDim: this.$store.state.gameEntity.yDim,
-        winSize: this.$store.state.gameEntity.winSize,
-      },
-      isMyTurn: false,
-      mySide: '',
+      lookingForGame: true,
 
-      resources: {
-        cellIcons: null
-      }
+      opponentExited: false,
+      replayOffered: false,
+      replayDeclined: false
     }
   },
 
 
   created() {
     this.resources.cellIcons = Resources.getCellIcons()
+
+    this.$store.dispatch('invites/initialize')
 
     let url = '/game'
     if (debug)
@@ -65,7 +64,6 @@ export default {
 
     this.hubConnection.on('MoveRecieved', index=>{
       this.$store.commit('gameEntity/makeMove', index)
-      this.isMyTurn = true
     })
 
     this.hubConnection.on('GameEnded', conditions=>{
@@ -89,32 +87,32 @@ export default {
     this.hubConnection.on('MyIdAndAvaliablePlayers', (myId, players)=> {
       this.myId = myId
 
-      this.$refs['game-search'].updateAvaliablePlayers(players, myId)
+      this.$store.dispatch('invites/updateAvaliablePlayers', {players: players, myId: myId})
     })
 
     this.hubConnection.on('AvaliablePlayersUpdtated', players => {
-      this.$refs['game-search'].updateAvaliablePlayers(players, this.myId)
+      this.$store.dispatch('invites/updateAvaliablePlayers', {players: players, myId: this.myId})
     })
 
     this.hubConnection.on('InviteRequested', (opponentId, dimensions) => {
-      this.$refs['game-search'].invitesOpponentsIds.push({id: opponentId, dimensions: dimensions})
+      this.$store.commit('invites/addInvite', {id: opponentId, dimensions: dimensions})
     })
 
     this.hubConnection.on('InviteRemoved', (opponentId) => {
-      this.$refs['game-search'].removeInvite(opponentId)
+     this.$store.dispatch('invites/removeInvite', opponentId)
     })
 
     
     this.hubConnection.on('OpponentExited', () => {
-      this.$refs['game-info'].opponentExited = true
+      this.opponentExited = true
     })
 
     this.hubConnection.on('ReplayRequested', () => {
-      this.$refs['game-info'].replayOffered = true
+      this.replayOffered = true
     })
 
     this.hubConnection.on('ReplayDeclined', () => {
-      this.$refs['game-info'].replayDeclined = true
+      this.replayDeclined = true
     })
 
     this.hubConnection.start()
@@ -123,25 +121,28 @@ export default {
 
   methods: {
     cellClickHandler(index) {
-      this.isMyTurn = false
-
       this.$store.commit('gameEntity/makeMove', index)
 
       this.hubConnection.invoke('SendMove', index)
     },
+    
 
     sizesClickHandler(dimensions) {
-      this.myPreferredDimensions = dimensions
+      this.$store.commit('invites/setMyPreferredDimensions', dimensions)
     },
+
 
     exitClickHandler() {
       this.lookingForGame = true
 
+      this.$store.commit('invites/reset')
+
       this.hubConnection.invoke('ResumeGameSearch')
     },
 
+
     inviteClickHandler(opponentId) {
-      this.hubConnection.invoke('SendInviteRequest', opponentId, this.myPreferredDimensions)
+      this.hubConnection.invoke('SendInviteRequest', opponentId, this.$store.state.invites.myPreferredDimensions)
     },
 
     acceptClickHandler(opponentId) {
@@ -154,32 +155,30 @@ export default {
 
 
     offerReplayClickHandler() {
+      this.replayDeclined = false
+
       this.hubConnection.invoke('SendReplayRequest')
     },
 
-    acceptReplayClickHandler() {
+    acceptReplayClickHandler() {  
       this.hubConnection.invoke('SendReplayAccept')
     },
 
     declineReplayClickHandler() {
+      this.replayOffered = false
+
       this.hubConnection.invoke('SendReplayDecline')
     },
 
 
-    createGame(isMyTurn, dimensions, opponentId) {
+    createGame(isMyTurn, dimensions) {
       this.lookingForGame = false
-      
-      if (isMyTurn)
-        this.mySide = 'crosses'
-      else
-        this.mySide = 'noughts'
 
-      this.isMyTurn = isMyTurn
+      this.opponentExited = false
+      this.replayOffered = false
+      this.replayDeclined = false
 
-      this.$refs['game-info'].replayOffered = false
-      this.$refs['game-info'].opponentExited = false
-
-      this.$store.commit('gameEntity/newGame', dimensions)
+      this.$store.commit('gameEntity/newGame', {dimensions: dimensions, isMyTurn: isMyTurn})
     }
   }
 }

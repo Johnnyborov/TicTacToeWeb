@@ -1,13 +1,13 @@
 <template>
   <div id="game-search">
     <div>
-      <p>Connected Players Ids:</p>
+      <p>Connected Opponents Ids:</p>
       <div class="buttons-div">
         <button class="small-btn" @click="inviteButtonHandler">Invite</button>
       </div>
       <ul>
-        <li v-for="player in avaliablePlayers" :key="player.key" @click="playerSelectedHandler($event, player.key)">
-          {{player.key}}
+        <li v-for="opponent in avaliableOpponents" :key="opponent.key" @click="opponentSelectedHandler($event, opponent.key)">
+          {{opponent.key}}
         </li>
       </ul>
     </div>
@@ -18,7 +18,7 @@
         <button class="small-btn" @click="declineButtonHandler">Decline</button>
       </div>
       <ul>
-        <li v-for="invite in invitesOpponentsIds" :key="invite.id" @click="inviteSelectedHandler($event, invite.id)">
+        <li v-for="invite in invites" :key="invite.id" @click="inviteSelectedHandler($event, invite.id)">
           {{invite.id}} <br/> x:{{invite.dimensions.xDim}} y:{{invite.dimensions.yDim}} w:{{invite.dimensions.winSize}}
         </li>
       </ul>
@@ -27,80 +27,89 @@
 </template>
 
 <script>
+import {mapState} from 'vuex'
+
 export default {
   data() {
     return {
-      avaliablePlayers: [],
-      invitesOpponentsIds: [],
+      unsubscribeMutations: null,
 
-      prevSelectedPlayerTarget: undefined,
+      prevSelectedOpponentTarget: undefined,
       prevSelectedInviteTarget: undefined,
-      selectedPlayerId: '',
-      selectedInviteOpponentId: ''
     }
   },
 
+  computed: {
+    ...mapState('invites', [
+      'avaliableOpponents',
+      'invites',
+
+      'selectedOpponentId',
+      'selectedInviteOpponentId'
+    ])
+  },
+
+  
+  created() {
+    this.unsubscribeMutations = this.$store.subscribe((mutation,state) => {
+      switch(mutation.type) {
+        case 'invites/removeInvite':
+          this.clearPrevSelectedInviteTargetClassName()
+          break
+      }
+    })
+  },
+    
+  destroyed() {
+    this.unsubscribeMutations()
+  },
+
   methods: {
-    playerSelectedHandler(event, id) {
-      if (typeof(this.prevSelectedPlayerTarget) !== 'undefined')
-        this.prevSelectedPlayerTarget.className = ''
+    opponentSelectedHandler(event, id) {
+      this.clearPrevSelectedOpponentTargetClassName()
 
-      this.prevSelectedPlayerTarget = event.target
-
+      this.prevSelectedOpponentTarget = event.target
       event.target.className = 'selected'
-      this.selectedPlayerId = id
+
+      this.$store.commit('invites/setSelectedOpponentId', id)
     },
 
     inviteSelectedHandler(event, id) {
-      if (typeof(this.prevSelectedInviteTarget) !== 'undefined')
-        this.prevSelectedInviteTarget.className = ''
+      this.clearPrevSelectedInviteTargetClassName()
 
       this.prevSelectedInviteTarget = event.target
-
       event.target.className = 'selected'
-      this.selectedInviteOpponentId = id
+
+      this.$store.commit('invites/setSelectedInviteOpponentId', id)
     },
 
 
     inviteButtonHandler() {
-      if (this.avaliablePlayers.find(player => player.key === this.selectedPlayerId)) {
-        this.$emit('invite-click', this.selectedPlayerId)
+      if (this.avaliableOpponents.find(player => player.key === this.selectedOpponentId)) {
+        this.$emit('invite-click', this.selectedOpponentId)
       }
     },
 
     acceptButtonHandler() {
-      if (this.invitesOpponentsIds.find(invite => invite.id === this.selectedInviteOpponentId)) {
+      if (this.invites.find(invite => invite.id === this.selectedInviteOpponentId)) {
         this.$emit('accept-click', this.selectedInviteOpponentId)
       }
     },
 
     declineButtonHandler() {
-      if (this.invitesOpponentsIds.find(invite => invite.id === this.selectedInviteOpponentId)) {
+      if (this.invites.find(invite => invite.id === this.selectedInviteOpponentId)) {
         this.$emit('decline-click', this.selectedInviteOpponentId)
       }
     },
 
-
-    updateAvaliablePlayers(players, myId) {
-      this.avaliablePlayers = players.filter(player=>player.key !== myId)
-
-      if (!this.avaliablePlayers.find(player=> player.key === this.selectedPlayerId)) {
-        this.selectedPlayerId = ''
-      }
+    clearPrevSelectedOpponentTargetClassName(){
+      if (typeof(this.prevSelectedOpponentTarget) !== 'undefined')
+        this.prevSelectedOpponentTarget.className = ''
     },
 
-    removeInvite(id) {
-      let index = this.invitesOpponentsIds.findIndex(invite => invite.id === id)
-      if (index !== -1) {
-        this.invitesOpponentsIds.splice(index,1)
-
-        if (id == this.selectedInviteOpponentId) {
-          if (typeof(this.prevSelectedInviteTarget) !== 'undefined')
-            this.prevSelectedInviteTarget.className = ''
-
-          this.selectedInviteOpponentId = ''
-        }
-      }
+    clearPrevSelectedInviteTargetClassName(){
+      if (typeof(this.prevSelectedInviteTarget) !== 'undefined')
+        this.prevSelectedInviteTarget.className = ''
     }
   }
 }

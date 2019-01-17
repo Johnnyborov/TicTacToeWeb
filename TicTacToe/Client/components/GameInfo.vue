@@ -1,6 +1,7 @@
 <template>
 <div id="game-info">
   <h5 class="margin-bottom" id="game-status"><span v-html="this.gameStatus"></span></h5>
+
   <template v-if="lookingForGame">
     <p>Preferred Dimensions:</p>
     <div id="game-dims">
@@ -23,18 +24,19 @@
     </div>
     <div id="curr-dims">
       <p class="margin-bottom">My Current Preferred Dimensions: </p>
-      <p>{{myPreferredDimensions.xDim}} y:{{myPreferredDimensions.yDim}} w:{{myPreferredDimensions.winSize}}</p>
+      <p>{{$store.state.invites.myPreferredDimensions.xDim}} y:{{$store.state.invites.myPreferredDimensions.yDim}} w:{{$store.state.invites.myPreferredDimensions.winSize}}</p>
     </div>
   </template>
+
   <template v-else>
-    <div v-if="!opponentExited && !replayOffered">
-      <p v-if="replayDeclined" class="margin-bottom">Opponent declined your replay request</p>
-      <button class="game-btn margin-bottom" @click="offerReplayButtonHandler">Offer Replay</button>
+    <div v-if="!opponentExited && !replayOffered" style="height: 3em;">
+      <button class="game-btn margin-bottom" @click="$emit('offer-replay-click')">Offer Replay</button>
+      <p v-show="replayDeclined" class="margin-bottom">Opponent declined your replay request</p>
     </div>
     <div v-else-if="!opponentExited">
       <p>Opponent offered to replay</p>
       <button class="game-btn margin-bottom" @click="$emit('accept-replay-click')">Accept</button>
-      <button class="game-btn" @click="declineButtonHandler">Decline</button>
+      <button class="game-btn" @click="$emit('decline-replay-click')">Decline</button>
     </div>
 
     <button id="exit-btn" class="game-btn" @click="$emit('exit-click')">Exit Game</button>
@@ -70,19 +72,20 @@ export default {
       default: true
     },
 
-    isMyTurn: {
+
+    opponentExited: {
       type: Boolean,
-      default: true
+      default: false
     },
 
-    mySide: {
-      type: String,
-      default: ''
+    replayOffered: {
+      type: Boolean,
+      default: false
     },
 
-    myPreferredDimensions: {
-      type: Object,
-      default: null
+    replayDeclined: {
+      type: Boolean,
+      default: false
     }
   },
 
@@ -100,15 +103,15 @@ export default {
         maxXDim: dimLimits.maxXDim,
         maxYDim: dimLimits.maxYDim,
         maxWinSize: dimLimits.maxWinSize
-      },
-
-      opponentExited: false,
-      replayOffered: false,
-      replayDeclined: false
+      }
     }
   },
 
   computed: {
+    gameState() {
+      return this.$store.state.gameEntity
+    },
+
     gameStatus() {
       let result = ''
       
@@ -117,16 +120,16 @@ export default {
       }
       else
       {
-        if (this.$store.state.gameEntity.gameOver) {
-          switch(this.$store.state.gameEntity.winner) {
+        if (this.gameState.gameOver) {
+          switch(this.gameState.winner) {
             case 'crosses':
-              if (this.mySide === 'crosses')
+              if (this.gameState.mySide === 'crosses')
                 result = 'You won!'
               else
                 result = 'You lost!'
               break
             case 'noughts':
-              if (this.mySide === 'noughts')
+              if (this.gameState.mySide === 'noughts')
                 result = 'You won!'
               else
                 result = 'You lost!'
@@ -141,13 +144,13 @@ export default {
         }
         else
         {
-          if (this.isMyTurn)
+          if (this.gameState.isMyTurn)
             result = 'Your turn.'
           else
             result = "Opponent's turn."
         }
 
-        result = '<i>Your side: ' + this.mySide + '</i>.<br/><br/>' + result
+        result = '<i>Your side: ' + this.gameState.mySide + '</i>.<br/><br/>' + result
       }
 
       return result
@@ -179,25 +182,12 @@ export default {
 
   methods: {
     applyButtonHandler() {
-      let state = this.$store.state.gameEntity
       let dimensions = {xDim: this.xDim, yDim: this.yDim, winSize: this.winSize}
 
-      if (!dimensionsAreValid(dimensions) || !dimensionsChanged(state, dimensions))
+      if (!dimensionsAreValid(dimensions) || !dimensionsChanged(this.gameState, dimensions))
         return
 
       this.$emit('sizes-click', dimensions)
-    },
-
-    offerReplayButtonHandler() {
-      this.replayDeclined = false
-
-      this.$emit('offer-replay-click')
-    },
-
-    declineButtonHandler() {
-      this.replayOffered = false
-
-      this.$emit('decline-replay-click')
     }
   }
 }
