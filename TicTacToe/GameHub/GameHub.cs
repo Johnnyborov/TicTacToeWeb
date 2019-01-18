@@ -37,10 +37,10 @@ namespace TicTacToe.GameHub
 
       await Clients.Client(game.GetNextMovePlayerId()).SendAsync("MoveRecieved", index);
 
-      if (game.IsGameOver())
+      if (game.GameOver)
       {
-        await Clients.Client(Context.ConnectionId).SendAsync("GameEnded", game.GetGameOverConditions());
-        await Clients.Client(game.GetNextMovePlayerId()).SendAsync("GameEnded", game.GetGameOverConditions());
+        await Clients.Client(Context.ConnectionId).SendAsync("GameEnded", game.GameOverConditions);
+        await Clients.Client(game.GetNextMovePlayerId()).SendAsync("GameEnded", game.GameOverConditions);
       }
     }
 
@@ -177,7 +177,7 @@ namespace TicTacToe.GameHub
         bool forcedGameOver = game.FinishGame(currentId);
         if (forcedGameOver)
         {
-          var conditions = game.GetGameOverConditions();
+          var conditions = game.GameOverConditions;
           await Clients.Client(currentId).SendAsync("GameEnded", conditions);
           await Clients.Client(opponentId).SendAsync("GameEnded", conditions);
         }
@@ -264,7 +264,7 @@ namespace TicTacToe.GameHub
         bool forcedGameOver = game.FinishGame(currentId);
         if (forcedGameOver)
         {
-          var conditions = game.GetGameOverConditions();
+          var conditions = game.GameOverConditions;
           await Clients.Client(opponentId).SendAsync("GameEnded", conditions);
         }
 
@@ -317,7 +317,7 @@ namespace TicTacToe.GameHub
         bool forcedGameOver = game.FinishGame(currentId);
         if (forcedGameOver)
         {
-          var conditions = game.GetGameOverConditions();
+          var conditions = game.GameOverConditions;
           await Clients.Client(opponentId).SendAsync("GameEnded", conditions);
         }
 

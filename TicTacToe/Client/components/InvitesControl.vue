@@ -1,5 +1,5 @@
 <template>
-  <div id="game-search">
+  <div>
     <div>
       <p>Connected Opponents Ids:</p>
       <div class="buttons-div">
@@ -116,12 +116,7 @@ export default {
 </script>
 
 <style>
-  #game-search {
-    background: burlywood;
-    width: 100%;
-    height: 70%;
-    position: absolute;
-
+  #invites-control {
     display: flex;
     flex-direction: row;
     justify-content: space-around;
@@ -150,11 +145,4 @@ export default {
     background: green;
   }
 
-
-  @media (orientation: landscape) {
-    #game-search {
-      width: 70%;
-      height: 100%;
-    }
-  }
 </style>

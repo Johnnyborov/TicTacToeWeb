@@ -22,37 +22,32 @@ namespace TicTacToe.GameHub
 
   public class Game
   {
-    private enum CellTypes: byte { Clear = 0, Cross, Nought }
-
-    private const int MinXDim = 3;
-    private const int MinYDim = 3;
-    private const int MinWinSize = 2;
-    private const int MaxXDim = 100;
-    private const int MaxYDim = 100;
-    private const int MaxWinSize = 30;
-
-
-    private CellTypes[] Cells;
-
-    private int MovesCount { get; set; } = 0;
-    private bool GameOver { get; set; } = false;
-
-    private string Winner = "";
+    internal bool GameOver { get; set; } = false;
 
     internal Dimensions GameDimensions { get; set; }
-    private Conditions GameOverConditions { get; set; }
-
+    internal Conditions GameOverConditions { get; set; }
 
     internal string CrossesId { get; set; }
     internal string NoughtsId { get; set; }
 
-    private Game(string crossesId, string noughtsId, Dimensions dimensions)
-    {
-      CrossesId = crossesId;
-      NoughtsId = noughtsId;
 
-      GameDimensions = dimensions;
-      Cells = new CellTypes[GameDimensions.xDim * GameDimensions.yDim];
+    internal static Game CreateGame(string player1Id, string player2Id, Dimensions dims)
+    {
+      Game game;
+
+      Random rand = new Random();
+      bool player1FirstMove = rand.Next(0, 2) == 0;
+
+      if (player1FirstMove) // crosses = player1
+      {
+        game = new Game(player1Id, player2Id, dims);
+      }
+      else // crosses = player2
+      {
+        game = new Game(player2Id, player1Id, dims);
+      }
+
+      return game;
     }
 
     internal static bool DimensionsAreValid(Dimensions dimensions)
@@ -65,18 +60,6 @@ namespace TicTacToe.GameHub
       }
 
       return true;
-    }
-
-    private string CalculateWinner()
-    {
-      if (MovesCount % 2 == 0)
-      {
-        return "noughts";
-      }
-      else
-      {
-       return "crosses";
-      }
     }
 
     internal bool TryMakeMove(int index)
@@ -98,6 +81,91 @@ namespace TicTacToe.GameHub
       CheckGame();
 
       return true;
+    }
+
+    internal string GetNextMovePlayerId()
+    {
+      if (MovesCount % 2 == 0)
+      {
+        return CrossesId;
+      }
+      else
+      {
+        return NoughtsId;
+      }
+    }
+
+    internal string GetOpponentId(string currId)
+    {
+      if (currId == CrossesId)
+      {
+        return NoughtsId;
+      }
+      else
+      {
+        return CrossesId;
+      }
+    }
+
+    internal bool FinishGame(string looserId)
+    {
+      if (!GameOver)
+      {
+        if (looserId == CrossesId)
+        {
+          Winner = "noughts";
+        }
+        else
+        {
+          Winner = "crosses";
+        }
+
+        GameOver = true;
+        GameOverConditions = new Conditions { winner = Winner, direction = "forfeit", i = -1, j = -1 };
+
+        return true;
+      }
+
+      return false;
+    }
+
+    #region private fields/props
+    private enum CellTypes : byte { Clear = 0, Cross, Nought }
+
+    private const int MinXDim = 3;
+    private const int MinYDim = 3;
+    private const int MinWinSize = 2;
+    private const int MaxXDim = 100;
+    private const int MaxYDim = 100;
+    private const int MaxWinSize = 30;
+
+
+    private CellTypes[] Cells;
+
+    private string Winner = "";
+    private int MovesCount { get; set; } = 0;
+    #endregion
+
+    #region private methods
+    private Game(string crossesId, string noughtsId, Dimensions dimensions)
+    {
+      CrossesId = crossesId;
+      NoughtsId = noughtsId;
+
+      GameDimensions = dimensions;
+      Cells = new CellTypes[GameDimensions.xDim * GameDimensions.yDim];
+    }
+
+    private string CalculateWinner()
+    {
+      if (MovesCount % 2 == 0)
+      {
+        return "noughts";
+      }
+      else
+      {
+        return "crosses";
+      }
     }
 
     // ckeck for chain=|winSize cells of same type in a row| in 4 possible directions
@@ -224,81 +292,6 @@ namespace TicTacToe.GameHub
         return;
       }
     }
-
-    internal string GetNextMovePlayerId()
-    {
-      if (MovesCount % 2 == 0)
-      {
-        return CrossesId;
-      }
-      else
-      {
-        return NoughtsId;
-      }
-    }
-
-    internal string GetOpponentId(string currId)
-    {
-      if (currId == CrossesId)
-      {
-        return NoughtsId;
-      }
-      else
-      {
-        return CrossesId;
-      }
-    }
-
-    internal bool IsGameOver()
-    {
-      return GameOver;
-    }
-
-    internal Conditions GetGameOverConditions()
-    {
-      return GameOverConditions;
-    }
-
-    internal bool FinishGame(string looserId)
-    {
-      if (!GameOver)
-      {
-        if (looserId == CrossesId)
-        {
-          Winner = "noughts";
-        }
-        else
-        {
-          Winner = "crosses";
-        }
-
-        GameOver = true;
-        GameOverConditions = new Conditions { winner = Winner, direction = "forfeit", i = -1, j = -1 };
-
-        return true;
-      }
-
-      return false;
-    }
-
-    internal static Game CreateGame(string player1Id, string player2Id, Dimensions dims)
-    {
-      Game game;
-
-      Random rand = new Random();
-      bool player1FirstMove = rand.Next(0, 2) == 0;
-
-      if (player1FirstMove) // crosses = player1
-      {
-        game = new Game(player1Id, player2Id, dims);
-      }
-      else // crosses = player2
-      {
-        game = new Game(player2Id, player1Id, dims);
-      }
-
-      return game;
-    }
-
+    #endregion
   }
 }

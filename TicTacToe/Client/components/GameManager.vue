@@ -1,19 +1,26 @@
 <template>
   <div id="game-manager">
-    <game-search v-if="lookingForGame" @invite-click="inviteClickHandler"
-      @accept-click="acceptClickHandler" @decline-click="declineClickHandler"></game-search>
-    <game-field v-else @cell-clicked="cellClickHandler" :cellIcons="resources.cellIcons"></game-field>
+    <template v-if="lookingForGame">
+      <invites-control id="invites-control" @invite-click="inviteClickHandler" @accept-click="acceptClickHandler"
+        @decline-click="declineClickHandler"></invites-control>
+      <dimensions-control id="dimensions-control" @sizes-click="sizesClickHandler"></dimensions-control>
+    </template>
 
-    <game-info @exit-click="exitClickHandler" @sizes-click="sizesClickHandler" @offer-replay-click="offerReplayClickHandler"
-      @accept-replay-click="acceptReplayClickHandler" @decline-replay-click="declineReplayClickHandler" :lookingForGame="lookingForGame"
-      :opponentExited="opponentExited" :replayOffered="replayOffered" :replayDeclined="replayDeclined"></game-info>
+    <template v-else>
+      <game-field id="game-field" @cell-clicked="cellClickHandler" :cellIcons="resources.cellIcons"></game-field>
+      <game-control id="game-control" @exit-click="exitClickHandler" @offer-replay-click="offerReplayClickHandler"
+        @accept-replay-click="acceptReplayClickHandler" @decline-replay-click="declineReplayClickHandler"
+        :opponentExited="opponentExited" :replayOffered="replayOffered" :replayDeclined="replayDeclined"></game-control>
+    </template>
   </div>
 </template>
 
 <script>
-import GameSearch from './GameSearch.vue'
+import InvitesControl from './InvitesControl.vue'
+import DimensionsControl from './DimensionsControl.vue'
+
 import GameField from './GameField.vue'
-import GameInfo from './GameInfo.vue'
+import GameControl from './GameControl.vue'
 
 import Resources from '../resources/resources.js'
 
@@ -23,9 +30,11 @@ const debug = process.env.NODE_ENV !== 'production'
 
 export default {
   components: {
-    'game-search': GameSearch,
+    'invites-control': InvitesControl,
+    'dimensions-control': DimensionsControl,
+
     'game-field': GameField,
-    'game-info': GameInfo
+    'game-control': GameControl
   },
 
   data() {
@@ -192,10 +201,44 @@ export default {
     position: relative;
   }
 
+  #game-field, #invites-control {
+    background: burlywood;
+    width: 100%;
+    height: 70%;
+    position: absolute;
+  }
+
+  #game-control, #dimensions-control {
+    font-family: Verdana;
+    color: forestgreen;
+    background: burlywood;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+
+    width: 100%;
+    height: 30%;
+    position: absolute;
+    top: 70%;
+  }
+
   @media (orientation: landscape) {
     #game-manager {
       width: 100%;
       padding-bottom: 70%;
+    }
+
+    #game-field, #invites-control {
+      width: 70%;
+      height: 100%;
+    }
+
+    #game-control, #dimensions-control {
+      width: 30%;
+      height: 100%;
+      top: 0%;
+      left: 70%;
     }
   }
 </style>

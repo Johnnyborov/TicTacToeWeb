@@ -5,6 +5,7 @@ function _newGame(state, isMyTurn) {
     state.mySide = 'noughts'
 
   state.isMyTurn = isMyTurn
+  state.winByForfeit = false
   state.gameOver = false
   state.movesCount = 0
   state.winner = ''
@@ -27,6 +28,9 @@ function _finishGame(state, conditions) {
   state.gameOver = true
 
   setWinChainIndexes(state, conditions)
+
+  if (conditions.direction === 'forfeit')
+    state.winByForfeit = true
 }
 
 // winSize cells in one of 4 directions starting from cell (i,j)
@@ -66,12 +70,16 @@ export default {
   state: {
     gameOver: false,
     isMyTurn: false,
+    winByForfeit: false,
+    
     mySide: '',
     movesCount: 0,
     winner: '',
+
     xDim: 10,
     yDim: 10,
     winSize: 4,
+
     winChainIndexes: [],
     cells: []
   },

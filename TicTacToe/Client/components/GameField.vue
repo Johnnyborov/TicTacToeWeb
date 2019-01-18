@@ -1,6 +1,6 @@
 <template>
-<div id="game-field">
-  <canvas id="canvas" ref="canvas"
+<div>
+  <canvas ref="canvas"
           @mousedown.prevent="mouseDownHandler($event)"
           @mouseup="mouseUpHandler($event)"
           @mouseleave="mouseLeaveHandler()"
@@ -275,19 +275,3 @@ export default {
   }
 }
 </script>
-
-<style>
-  #game-field {
-    background: burlywood;
-    width: 100%;
-    height: 70%;
-    position: absolute;
-  }
-
-  @media (orientation: landscape) {
-    #game-field {
-      width: 70%;
-      height: 100%;
-    }
-  }
-</style>
