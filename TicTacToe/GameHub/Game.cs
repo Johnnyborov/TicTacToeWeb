@@ -2,19 +2,24 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Threading;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace TicTacToe.GameHub
 {
-  public struct Dimensions
+  public struct Settings
   {
     public int xDim;
     public int yDim;
     public int winSize;
+    public int timeout;
   }
 
   public struct Conditions
   {
     public string winner;
+    public string reason;
     public string direction;
     public int i;
     public int j;
@@ -24,14 +29,14 @@ namespace TicTacToe.GameHub
   {
     internal bool GameOver { get; set; } = false;
 
-    internal Dimensions GameDimensions { get; set; }
+    internal Settings GameSettings { get; set; }
     internal Conditions GameOverConditions { get; set; }
 
     internal string CrossesId { get; set; }
     internal string NoughtsId { get; set; }
 
 
-    internal static Game CreateGame(string player1Id, string player2Id, Dimensions dims)
+    internal static Game CreateGame(string player1Id, string player2Id, Settings settings)
     {
       Game game;
 
@@ -40,21 +45,21 @@ namespace TicTacToe.GameHub
 
       if (player1FirstMove) // crosses = player1
       {
-        game = new Game(player1Id, player2Id, dims);
+        game = new Game(player1Id, player2Id, settings);
       }
       else // crosses = player2
       {
-        game = new Game(player2Id, player1Id, dims);
+        game = new Game(player2Id, player1Id, settings);
       }
 
       return game;
     }
 
-    internal static bool DimensionsAreValid(Dimensions dimensions)
+    internal static bool SettingsAreValid(Settings settings)
     {
-      if (dimensions.xDim < MinXDim || dimensions.yDim < MinYDim || dimensions.winSize < MinWinSize ||
-          dimensions.xDim > MaxXDim || dimensions.yDim > MaxYDim || dimensions.winSize > MaxWinSize ||
-          dimensions.winSize > Math.Min(dimensions.xDim, dimensions.yDim))
+      if (settings.xDim < MinXDim || settings.yDim < MinYDim || settings.winSize < MinWinSize ||
+          settings.xDim > MaxXDim || settings.yDim > MaxYDim || settings.winSize > MaxWinSize ||
+          settings.winSize > Math.Min(settings.xDim, settings.yDim))
       {
         return false;
       }
@@ -64,7 +69,7 @@ namespace TicTacToe.GameHub
 
     internal bool TryMakeMove(int index)
     {
-      if (Cells[index] != CellTypes.Clear)
+      if (GameOver || Cells[index] != CellTypes.Clear)
         return false;
 
       if (MovesCount % 2 == 0)
@@ -79,6 +84,11 @@ namespace TicTacToe.GameHub
       MovesCount++;
 
       CheckGame();
+
+      if (GameOver)
+        Timer.Dispose();
+      else
+        Timer.Change(TimeoutInMilliseconds, Timeout.Infinite);
 
       return true;
     }
@@ -107,8 +117,10 @@ namespace TicTacToe.GameHub
       }
     }
 
-    internal bool FinishGame(string looserId)
+    internal bool FinishGame(string looserId, string reason)
     {
+      Timer.Dispose();
+
       if (!GameOver)
       {
         if (looserId == CrossesId)
@@ -121,7 +133,7 @@ namespace TicTacToe.GameHub
         }
 
         GameOver = true;
-        GameOverConditions = new Conditions { winner = Winner, direction = "forfeit", i = -1, j = -1 };
+        GameOverConditions = new Conditions { winner = Winner, reason = reason, direction = "none", i = -1, j = -1 };
 
         return true;
       }
@@ -142,18 +154,39 @@ namespace TicTacToe.GameHub
 
     private CellTypes[] Cells;
 
-    private string Winner = "";
+    private string Winner { get; set; } = "";
     private int MovesCount { get; set; } = 0;
+    private int TimeoutInMilliseconds { get; set; }
+
+    private readonly IHubClients Clients;
+    private readonly Timer Timer;
     #endregion
 
     #region private methods
-    private Game(string crossesId, string noughtsId, Dimensions dimensions)
+    private Game(string crossesId, string noughtsId, Settings settings)
     {
       CrossesId = crossesId;
       NoughtsId = noughtsId;
 
-      GameDimensions = dimensions;
-      Cells = new CellTypes[GameDimensions.xDim * GameDimensions.yDim];
+      GameSettings = settings;
+
+      if (settings.timeout > 0 && settings.timeout < Math.Pow(2, 32 - 10))
+        TimeoutInMilliseconds = settings.timeout * 1000;
+      else
+        TimeoutInMilliseconds = Timeout.Infinite;
+
+      Cells = new CellTypes[GameSettings.xDim * GameSettings.yDim];
+
+      Clients = Startup.ServiceProvider.GetService<IHubContext<GameHub>>().Clients;
+      Timer = new Timer(HandleTimeout, null, TimeoutInMilliseconds, Timeout.Infinite);
+    }
+
+    private async void HandleTimeout(object state)
+    {
+      FinishGame(GetNextMovePlayerId(), "timeout");
+
+      await Clients.Client(CrossesId).SendAsync("GameEnded", GameOverConditions);
+      await Clients.Client(NoughtsId).SendAsync("GameEnded", GameOverConditions);
     }
 
     private string CalculateWinner()
@@ -173,19 +206,19 @@ namespace TicTacToe.GameHub
     private void CheckGame()
     {
       // check rows
-      for (int i = 0; i < GameDimensions.yDim; i++)
+      for (int i = 0; i < GameSettings.yDim; i++)
       {
-        for (int j = 0; j < GameDimensions.xDim - GameDimensions.winSize + 1; j++)
+        for (int j = 0; j < GameSettings.xDim - GameSettings.winSize + 1; j++)
         {
 
-          CellTypes start = Cells[i * GameDimensions.xDim + j];
+          CellTypes start = Cells[i * GameSettings.xDim + j];
           if (start != CellTypes.Clear)
           {
 
             bool foundChain = true;
-            for (int k = 1; k < GameDimensions.winSize; k++)
+            for (int k = 1; k < GameSettings.winSize; k++)
             {
-              if (Cells[i * GameDimensions.xDim + (j + k)] != start)
+              if (Cells[i * GameSettings.xDim + (j + k)] != start)
                 foundChain = false;
             }
 
@@ -201,19 +234,19 @@ namespace TicTacToe.GameHub
       }
 
       // check columns
-      for (int i = 0; i < GameDimensions.yDim - GameDimensions.winSize + 1; i++)
+      for (int i = 0; i < GameSettings.yDim - GameSettings.winSize + 1; i++)
       {
-        for (int j = 0; j < GameDimensions.xDim; j++)
+        for (int j = 0; j < GameSettings.xDim; j++)
         {
 
-          CellTypes start = Cells[i * GameDimensions.xDim + j];
+          CellTypes start = Cells[i * GameSettings.xDim + j];
           if (start != CellTypes.Clear)
           {
 
             bool foundChain = true;
-            for (int k = 1; k < GameDimensions.winSize; k++)
+            for (int k = 1; k < GameSettings.winSize; k++)
             {
-              if (Cells[(i + k) * GameDimensions.xDim + j] != start)
+              if (Cells[(i + k) * GameSettings.xDim + j] != start)
                 foundChain = false;
             }
 
@@ -229,19 +262,19 @@ namespace TicTacToe.GameHub
       }
 
       // check dioganal right+down
-      for (int i = 0; i < GameDimensions.yDim - GameDimensions.winSize + 1; i++)
+      for (int i = 0; i < GameSettings.yDim - GameSettings.winSize + 1; i++)
       {
-        for (int j = 0; j < GameDimensions.xDim - GameDimensions.winSize + 1; j++)
+        for (int j = 0; j < GameSettings.xDim - GameSettings.winSize + 1; j++)
         {
 
-          CellTypes start = Cells[i * GameDimensions.xDim + j];
+          CellTypes start = Cells[i * GameSettings.xDim + j];
           if (start != CellTypes.Clear)
           {
 
             bool foundChain = true;
-            for (int k = 1; k < GameDimensions.winSize; k++)
+            for (int k = 1; k < GameSettings.winSize; k++)
             {
-              if (Cells[(i + k) * GameDimensions.xDim + (j + k)] != start)
+              if (Cells[(i + k) * GameSettings.xDim + (j + k)] != start)
                 foundChain = false;
             }
 
@@ -257,19 +290,19 @@ namespace TicTacToe.GameHub
       }
 
       // check dioganal left+down
-      for (int i = 0; i < GameDimensions.yDim - GameDimensions.winSize + 1; i++)
+      for (int i = 0; i < GameSettings.yDim - GameSettings.winSize + 1; i++)
       {
-        for (int j = GameDimensions.winSize - 1; j < GameDimensions.xDim; j++)
+        for (int j = GameSettings.winSize - 1; j < GameSettings.xDim; j++)
         {
 
-          CellTypes start = Cells[i * GameDimensions.xDim + j];
+          CellTypes start = Cells[i * GameSettings.xDim + j];
           if (start != CellTypes.Clear)
           {
 
             bool foundChain = true;
-            for (int k = 1; k < GameDimensions.winSize; k++)
+            for (int k = 1; k < GameSettings.winSize; k++)
             {
-              if (Cells[(i + k) * GameDimensions.xDim + (j - k)] != start)
+              if (Cells[(i + k) * GameSettings.xDim + (j - k)] != start)
                 foundChain = false;
             }
 
@@ -284,11 +317,11 @@ namespace TicTacToe.GameHub
         }
       }
 
-      if (MovesCount == GameDimensions.xDim * GameDimensions.yDim)
+      if (MovesCount == GameSettings.xDim * GameSettings.yDim)
       {
         Winner = "draw";
         GameOver = true;
-        GameOverConditions = new Conditions { winner = Winner, direction = "draw", i = -1, j = -1 };
+        GameOverConditions = new Conditions { winner = Winner, direction = "none", i = -1, j = -1 };
         return;
       }
     }

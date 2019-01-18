@@ -1,7 +1,7 @@
 <template>
   <div>
-    <div>
-      <p>Connected Opponents Ids:</p>
+    <div style="width: 45%;">
+      <p>Avaliable opponents:</p>
       <div class="buttons-div">
         <button class="small-btn" @click="inviteButtonHandler">Invite</button>
       </div>
@@ -11,15 +11,15 @@
         </li>
       </ul>
     </div>
-    <div>
-      <p>Invites Opponents Ids:</p>
+    <div style="width: 45%;">
+      <p>Invites:</p>
       <div class="buttons-div">
         <button class="small-btn" @click="acceptButtonHandler">Accept</button>
         <button class="small-btn" @click="declineButtonHandler">Decline</button>
       </div>
       <ul>
         <li v-for="invite in invites" :key="invite.id" @click="inviteSelectedHandler($event, invite.id)">
-          {{invite.id}} <br/> x:{{invite.dimensions.xDim}} y:{{invite.dimensions.yDim}} w:{{invite.dimensions.winSize}}
+          {{invite.id}} <br/> x:{{invite.settings.xDim}} y:{{invite.settings.yDim}} w:{{invite.settings.winSize}} t:{{invite.settings.timeout}}
         </li>
       </ul>
     </div>
@@ -51,10 +51,11 @@ export default {
 
   
   created() {
-    this.unsubscribeMutations = this.$store.subscribe((mutation,state) => {
-      switch(mutation.type) {
+    this.unsubscribeMutations = this.$store.subscribeAction((action,state) => {
+      switch(action.type) {
         case 'invites/removeInvite':
-          this.clearPrevSelectedInviteTargetClassName()
+          if (action.payload == this.selectedInviteOpponentId)
+            this.clearPrevSelectedInviteTargetClassName()
           break
       }
     })
@@ -129,7 +130,7 @@ export default {
   }
 
   .small-btn {
-    width: 45%;
+    width: 40%;
     background-color: darkolivegreen;
   }
 

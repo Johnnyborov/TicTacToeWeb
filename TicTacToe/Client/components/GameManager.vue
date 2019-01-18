@@ -3,7 +3,7 @@
     <template v-if="lookingForGame">
       <invites-control id="invites-control" @invite-click="inviteClickHandler" @accept-click="acceptClickHandler"
         @decline-click="declineClickHandler"></invites-control>
-      <dimensions-control id="dimensions-control" @sizes-click="sizesClickHandler"></dimensions-control>
+      <settings-control id="settings-control" @sizes-click="sizesClickHandler"></settings-control>
     </template>
 
     <template v-else>
@@ -17,7 +17,7 @@
 
 <script>
 import InvitesControl from './InvitesControl.vue'
-import DimensionsControl from './DimensionsControl.vue'
+import SettingsControl from './SettingsControl.vue'
 
 import GameField from './GameField.vue'
 import GameControl from './GameControl.vue'
@@ -31,7 +31,7 @@ const debug = process.env.NODE_ENV !== 'production'
 export default {
   components: {
     'invites-control': InvitesControl,
-    'dimensions-control': DimensionsControl,
+    'settings-control': SettingsControl,
 
     'game-field': GameField,
     'game-control': GameControl
@@ -76,20 +76,18 @@ export default {
     })
 
     this.hubConnection.on('GameEnded', conditions=>{
-      this.$store.commit('gameEntity/finishGame', conditions)
+      this.$store.dispatch('gameEntity/finishGame', conditions)
     })
 
-    this.hubConnection.on('GameCreated', (crossesId, noughtsId, dimensions) => {
-      let isMyTurn, opponentId
+    this.hubConnection.on('GameCreated', (crossesId, noughtsId, settings) => {
+      let isMyTurn
       if (crossesId === this.myId) {
         isMyTurn = true
-        opponentId = noughtsId
       } else {
         isMyTurn = false
-        opponentId = crossesId
       }
 
-      this.createGame(isMyTurn, dimensions, opponentId)
+      this.createGame(isMyTurn, settings)
     })
 
 
@@ -103,12 +101,12 @@ export default {
       this.$store.dispatch('invites/updateAvaliablePlayers', {players: players, myId: this.myId})
     })
 
-    this.hubConnection.on('InviteRequested', (opponentId, dimensions) => {
-      this.$store.commit('invites/addInvite', {id: opponentId, dimensions: dimensions})
+    this.hubConnection.on('InviteRequested', (opponentId, settings) => {
+      this.$store.commit('invites/addInvite', {id: opponentId, settings: settings})
     })
 
     this.hubConnection.on('InviteRemoved', (opponentId) => {
-     this.$store.dispatch('invites/removeInvite', opponentId)
+      this.$store.dispatch('invites/removeInvite', opponentId)
     })
 
     
@@ -136,8 +134,8 @@ export default {
     },
     
 
-    sizesClickHandler(dimensions) {
-      this.$store.commit('invites/setMyPreferredDimensions', dimensions)
+    sizesClickHandler(settings) {
+      this.$store.commit('invites/setMyPreferredSettings', settings)
     },
 
 
@@ -151,7 +149,7 @@ export default {
 
 
     inviteClickHandler(opponentId) {
-      this.hubConnection.invoke('SendInviteRequest', opponentId, this.$store.state.invites.myPreferredDimensions)
+      this.hubConnection.invoke('SendInviteRequest', opponentId, this.$store.state.invites.myPreferredSettings)
     },
 
     acceptClickHandler(opponentId) {
@@ -180,14 +178,14 @@ export default {
     },
 
 
-    createGame(isMyTurn, dimensions) {
+    createGame(isMyTurn, settings) {
       this.lookingForGame = false
 
       this.opponentExited = false
       this.replayOffered = false
       this.replayDeclined = false
 
-      this.$store.commit('gameEntity/newGame', {dimensions: dimensions, isMyTurn: isMyTurn})
+      this.$store.dispatch('gameEntity/newGame', {settings: settings, isMyTurn: isMyTurn})
     }
   }
 }
@@ -208,7 +206,7 @@ export default {
     position: absolute;
   }
 
-  #game-control, #dimensions-control {
+  #game-control, #settings-control {
     font-family: Verdana;
     color: forestgreen;
     background: burlywood;
@@ -234,7 +232,7 @@ export default {
       height: 100%;
     }
 
-    #game-control, #dimensions-control {
+    #game-control, #settings-control {
       width: 30%;
       height: 100%;
       top: 0%;

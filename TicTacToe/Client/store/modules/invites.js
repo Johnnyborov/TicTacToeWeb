@@ -8,7 +8,7 @@ export default {
     selectedOpponentId: '',
     selectedInviteOpponentId: '',
 
-    myPreferredDimensions: null
+    myPreferredSettings: null
   },
 
   mutations: {
@@ -43,14 +43,19 @@ export default {
     },
 
 
-    setMyPreferredDimensions(state, dimensions){
-      state.myPreferredDimensions = dimensions
+    setMyPreferredSettings(state, settings){
+      state.myPreferredSettings = settings
     }
   },
 
   actions: {
     initialize({commit, rootState}) {
-      commit('setMyPreferredDimensions', {xDim: rootState.gameEntity.xDim, yDim: rootState.gameEntity.yDim, winSize: rootState.gameEntity.winSize})
+      commit('setMyPreferredSettings', {
+        xDim: rootState.gameEntity.xDim,
+        yDim: rootState.gameEntity.yDim,
+        winSize: rootState.gameEntity.winSize,
+        timeout: rootState.gameEntity.timeout
+      })
     },
 
     

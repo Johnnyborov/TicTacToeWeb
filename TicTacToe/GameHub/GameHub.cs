@@ -9,7 +9,7 @@ namespace TicTacToe.GameHub
 {
   public class Player
   {
-    internal Dictionary<string, Dimensions> InvitedPlayersIds { get; set; } = new Dictionary<string, Dimensions>();
+    internal Dictionary<string, Settings> InvitedPlayersIds { get; set; } = new Dictionary<string, Settings>();
     internal List<string> InvitedByIds { get; set; } = new List<string>();
     internal Game Game { get; set; }
   }
@@ -45,11 +45,11 @@ namespace TicTacToe.GameHub
     }
 
 
-    public async Task SendInviteRequest(string inviteeId, Dimensions dimensions)
+    public async Task SendInviteRequest(string inviteeId, Settings settings)
     {
       string inviterId = Context.ConnectionId;
 
-      if (inviteeId != inviterId && Game.DimensionsAreValid(dimensions))
+      if (inviteeId != inviterId && Game.SettingsAreValid(settings))
       {
         bool added = false;
         lock (_lock)
@@ -57,7 +57,7 @@ namespace TicTacToe.GameHub
           if (AvaliablePlayers.ContainsKey(inviterId) && AvaliablePlayers.ContainsKey(inviteeId) &&
               !AvaliablePlayers[inviterId].InvitedPlayersIds.ContainsKey(inviteeId))
           {
-            AvaliablePlayers[inviterId].InvitedPlayersIds.Add(inviteeId, dimensions);
+            AvaliablePlayers[inviterId].InvitedPlayersIds.Add(inviteeId, settings);
             AvaliablePlayers[inviteeId].InvitedByIds.Add(inviterId);
             added = true;
           }
@@ -65,7 +65,7 @@ namespace TicTacToe.GameHub
 
         if (added)
         {
-          await Clients.Client(inviteeId).SendAsync("InviteRequested", inviterId, dimensions);
+          await Clients.Client(inviteeId).SendAsync("InviteRequested", inviterId, settings);
         }
       }
     }
@@ -120,13 +120,13 @@ namespace TicTacToe.GameHub
             }
           }
 
-          var dims = AvaliablePlayers[inviterId].InvitedPlayersIds[inviteeId];
+          var settings = AvaliablePlayers[inviterId].InvitedPlayersIds[inviteeId];
 
           AvaliablePlayers.Remove(inviterId);
           AvaliablePlayers.Remove(inviteeId);
 
 
-          game = Game.CreateGame(inviterId, inviteeId, dims);
+          game = Game.CreateGame(inviterId, inviteeId, settings);
 
           var inviter = new Player();
           var invitee = new Player();
@@ -148,7 +148,7 @@ namespace TicTacToe.GameHub
 
         await Clients.GroupExcept("AvaliablePlayers", inviterId, inviteeId).SendAsync("AvaliablePlayersUpdtated", AvaliablePlayers.ToArray());
 
-        await Clients.Clients(inviterId, inviteeId).SendAsync("GameCreated", game.CrossesId, game.NoughtsId, game.GameDimensions);
+        await Clients.Clients(inviterId, inviteeId).SendAsync("GameCreated", game.CrossesId, game.NoughtsId, game.GameSettings);
       }
     }
 
@@ -174,7 +174,7 @@ namespace TicTacToe.GameHub
 
       if (game != null && !opponentAlreadyLeft)
       {
-        bool forcedGameOver = game.FinishGame(currentId);
+        bool forcedGameOver = game.FinishGame(currentId, "surrender");
         if (forcedGameOver)
         {
           var conditions = game.GameOverConditions;
@@ -203,8 +203,8 @@ namespace TicTacToe.GameHub
 
           if (PlayingPlayers.ContainsKey(opponentId))
           {
-            var dims = game.GameDimensions;
-            game = Game.CreateGame(opponentId, currentId, dims);
+            var settings = game.GameSettings;
+            game = Game.CreateGame(opponentId, currentId, settings);
 
             PlayingPlayers[currentId].Game = game;
             PlayingPlayers[opponentId].Game = game;
@@ -216,7 +216,7 @@ namespace TicTacToe.GameHub
 
       if (created)
       {
-        await Clients.Clients(currentId, opponentId).SendAsync("GameCreated", game.CrossesId, game.NoughtsId, game.GameDimensions);
+        await Clients.Clients(currentId, opponentId).SendAsync("GameCreated", game.CrossesId, game.NoughtsId, game.GameSettings);
       }
     }
 
@@ -261,7 +261,7 @@ namespace TicTacToe.GameHub
 
       if (game != null)
       {
-        bool forcedGameOver = game.FinishGame(currentId);
+        bool forcedGameOver = game.FinishGame(currentId, "exit");
         if (forcedGameOver)
         {
           var conditions = game.GameOverConditions;
@@ -306,6 +306,8 @@ namespace TicTacToe.GameHub
         if (PlayingPlayers.ContainsKey(currentId))
         {
           game = PlayingPlayers[currentId].Game;
+          opponentId = game.GetOpponentId(currentId);
+
           PlayingPlayers.Remove(currentId);
         }
 
@@ -314,7 +316,7 @@ namespace TicTacToe.GameHub
 
       if (game != null)
       {
-        bool forcedGameOver = game.FinishGame(currentId);
+        bool forcedGameOver = game.FinishGame(currentId, "disconnect");
         if (forcedGameOver)
         {
           var conditions = game.GameOverConditions;

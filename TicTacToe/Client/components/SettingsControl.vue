@@ -2,8 +2,8 @@
 <div>
   <h5 class="margin-bottom" id="header">{{header}}</h5>
 
-  <p>Preferred Dimensions:</p>
-  <div id="game-dims">
+  <p>Preferred Settings:</p>
+  <div id="game-settings">
     <div>
       <label>x-dim:</label>
       <input v-model.trim.number="xDim" type="number"
@@ -21,9 +21,9 @@
     </div>
     <button id="apply-btn" class="game-btn" @click="applyButtonHandler">Apply</button>
   </div>
-  <div id="curr-dims">
-    <p class="margin-bottom">My Current Preferred Dimensions: </p>
-    <p>{{$store.state.invites.myPreferredDimensions.xDim}} y:{{$store.state.invites.myPreferredDimensions.yDim}} w:{{$store.state.invites.myPreferredDimensions.winSize}}</p>
+  <div id="curr-settings">
+    <p class="margin-bottom">My Current Preferred Settings: </p>
+    <p>{{$store.state.invites.myPreferredSettings.xDim}} y:{{$store.state.invites.myPreferredSettings.yDim}} w:{{$store.state.invites.myPreferredSettings.winSize}}</p>
   </div>
 
 </div>
@@ -32,7 +32,7 @@
 <script>
 import {dimLimits} from '../store/modules/gameEntity.js'
 
-function dimensionsAreValid({xDim, yDim, winSize}) {
+function settingsAreValid({xDim, yDim, winSize}) {
   if (typeof(xDim) !== 'number' || typeof(yDim) !== 'number' || typeof(winSize) !== 'number'||
       xDim < dimLimits.minXDim || yDim < dimLimits.minYDim || winSize < dimLimits.minWinSize ||
       xDim > dimLimits.maxXDim || yDim > dimLimits.maxYDim || winSize > dimLimits.maxWinSize ||
@@ -43,9 +43,9 @@ function dimensionsAreValid({xDim, yDim, winSize}) {
     return true
 }
 
-function preferredDimensionsChanged(state, {xDim, yDim, winSize}) {
-  if (xDim === state.myPreferredDimensions.xDim && yDim === state.myPreferredDimensions.yDim &&
-      winSize === state.myPreferredDimensions.winSize)
+function preferredSettingsChanged(state, {xDim, yDim, winSize}) {
+  if (xDim === state.myPreferredSettings.xDim && yDim === state.myPreferredSettings.yDim &&
+      winSize === state.myPreferredSettings.winSize)
     return false
   else
     return true
@@ -54,9 +54,9 @@ function preferredDimensionsChanged(state, {xDim, yDim, winSize}) {
 export default {
   data() {
     return {
-      xDim: this.$store.state.invites.myPreferredDimensions.xDim,
-      yDim: this.$store.state.invites.myPreferredDimensions.yDim,
-      winSize: this.$store.state.invites.myPreferredDimensions.winSize,
+      xDim: this.$store.state.invites.myPreferredSettings.xDim,
+      yDim: this.$store.state.invites.myPreferredSettings.yDim,
+      winSize: this.$store.state.invites.myPreferredSettings.winSize,
 
       limits: {
         minXDim: dimLimits.minXDim,
@@ -97,12 +97,12 @@ export default {
 
   methods: {
     applyButtonHandler() {
-      let dimensions = {xDim: this.xDim, yDim: this.yDim, winSize: this.winSize}
+      let settings = {xDim: this.xDim, yDim: this.yDim, winSize: this.winSize, timeout: this.$store.state.gameEntity.timeout}
 
-      if (!dimensionsAreValid(dimensions) || !preferredDimensionsChanged(this.$store.state.invites, dimensions))
+      if (!settingsAreValid(settings) || !preferredSettingsChanged(this.$store.state.invites, settings))
         return
 
-      this.$emit('sizes-click', dimensions)
+      this.$emit('sizes-click', settings)
     }
   }
 }
@@ -119,12 +119,12 @@ export default {
     background: green;
   }
 
-  #game-dims {
+  #game-settings {
     display: flex;
     flex-direction: row;
   }
 
-  #game-dims > div {
+  #game-settings > div {
     display: flex;
     flex-direction: row;
     justify-content: space-between;
@@ -146,7 +146,7 @@ export default {
     margin: 0 0 5% 0;
   }
 
-  #curr-dims {
+  #curr-settings {
     display: flex;
     flex-direction: row;
   }
@@ -156,7 +156,7 @@ export default {
   }
 
   @media (orientation: landscape) {
-    #game-dims {
+    #game-settings {
       flex-direction: column;
     }
 
@@ -177,7 +177,7 @@ export default {
       margin: 10% 0 10% 0;
     }
 
-    #curr-dims {
+    #curr-settings {
       flex-direction: column;
     }
 
